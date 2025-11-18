@@ -15,3 +15,14 @@ php artisan listen:mqtt -v
 sudo systemctl status mosquitto
 sudo systemctl start mosquitto  # If not running
 
+
+
+Rasp Pi
+
+sudo apt update
+sudo apt install python3-gpiozero python3-lgpio python3-pigpio gpiod libgpiod-dev pigpio
+sudo systemctl enable --now pigpiod   # starts the pigpio daemon
+
+
+
+

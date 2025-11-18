@@ -1,6 +1,12 @@
 @extends('layout1')
 
 @section('content')
+
+<div>
+    Server IP: 
+    <div>{{ $localIp }}</div>
+</div>
+
 <ul>
     @foreach($vehicles as $vehicle)
         <li data-vehicle-id="{{ $vehicle->id }}">

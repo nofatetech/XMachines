@@ -7,7 +7,16 @@ use PhpMqtt\Client\MqttClient;
 
 Route::get('/', function () {
     // return view('welcome');
-    return view('dashboard', ['vehicles' => \App\Models\Vehicle::all()]);
+
+    // $serverIp = $_SERVER;
+    // dd($serverIp); // For debugging
+
+    $localIp = getHostByName(getHostName());
+    // $localIp = "192.168.0.33";
+    // dd($localIp);
+
+
+    return view('dashboard', ['vehicles' => \App\Models\Vehicle::all(), 'localIp' => $localIp]);
 });
 
 Route::post('/vehicle/{id}/command', function (Request $request, $id) {

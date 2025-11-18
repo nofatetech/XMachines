@@ -36,6 +36,19 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 unsigned long last_status = 0;
 
+#define LED_BUILTIN 2 // Most ESP32 boards have a blue LED on GPIO2
+
+// Function to flash the built-in LED
+void flash_led(int count) {
+  pinMode(LED_BUILTIN, OUTPUT);
+  for (int i = 0; i < count; i++) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(100);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(100);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -50,6 +63,7 @@ void setup() {
     Serial.println("Connecting to WiFi...");
   }
   Serial.println("WiFi connected");
+  flash_led(1);
 
   // Setup MQTT
   client.setServer(mqtt_server, mqtt_port);
@@ -64,7 +78,7 @@ void loop() {
   client.loop();
 
   // Publish status every 10 x1k ms
-  if (millis() - last_status > 0.5 x 1000) {
+  if (millis() - last_status > 0.5 * 1000) {
     publish_status();
     last_status = millis();
   }
@@ -75,6 +89,7 @@ void reconnect() {
     Serial.println("Connecting to MQTT...");
     if (client.connect(mqtt_client_id)) {
       Serial.println("MQTT connected");
+      flash_led(2);
       client.subscribe(mqtt_control_topic);
     } else {
       Serial.print("MQTT failed, rc=");
@@ -85,6 +100,7 @@ void reconnect() {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
+  flash_led(3);
   // Parse JSON payload
   String message;
   for (unsigned int i = 0; i < length; i++) {
