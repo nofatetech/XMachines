@@ -1,6 +1,6 @@
-### XCars Framework – A Open-Source Soul  
+### XMachines Framework – A Open-Source Soul  
 
-XCars is a full-stack, production-grade framework that makes sentient machines possible without fighting the stack:  
+XMachines is a full-stack, production-grade framework that makes sentient machines possible without fighting the stack:  
 
 - Laravel 11 (the legendary PHP framework that just works – queues, broadcasting, API, auth, realtime, everything, tried and tested)
 - NativePHP ready (same code becomes desktop + mobile apps)  
@@ -12,5 +12,6 @@ XCars is a full-stack, production-grade framework that makes sentient machines p
 - Plug-and-play USB/Bluetooth controller support in progress. Use your PS/Wii/etc controllers, or do your own woth MakeyMakey.com.
 - Open Source.
 
-GitHub: https://github.com/nofatetech/XCars  
+GitHub: https://github.com/nofatetech/XMachines
+
 
