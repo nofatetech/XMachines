@@ -44,7 +44,7 @@ class ListenMqtt extends Command
         $this->info("MQTT client connected and listening for messages...");
 
         // Subscribe to the topic where all vehicles publish their status
-        $mqtt->subscribe('vehicles/+/status', function ($topic, $message) {
+        $mqtt->subscribe('vehicle/+/status', function ($topic, $message) {
             $this->info("Received message on topic [{$topic}]: {$message}");
 
             $data = json_decode($message, true);
@@ -69,7 +69,11 @@ class ListenMqtt extends Command
             $data = json_decode($message, true);
             $vehicleId = explode('/', $topic)[1]; // Extract vehicle ID from topic
             if (isset($data['action'])) {
-                $this->info("Vehicle #{$vehicleId} - Action: {$data['action']}, Speed: {$data['speed'] ?? 'N/A'}");
+                // $this->info("Vehicle #{$vehicleId} - Action: {$data['action']}, Speed: {$data['speed'] ?? 'N/A'}");
+
+                $speed = isset($data['speed']) ? $data['speed'] : 'N/A';
+                $this->info("Vehicle #{$vehicleId} - Action: {$data['action']}, Speed: {$speed}");
+
                 // Further actions can be added here, e.g., logging to a database,
                 // updating UI in real-time if a WebSocket server is running.
             }
