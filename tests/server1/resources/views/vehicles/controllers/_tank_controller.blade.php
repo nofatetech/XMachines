@@ -13,26 +13,32 @@
                     <caption>Motor Controls</caption>
                     <tr>
                         <td>Left Motor</td>
-                        <td><input type="range" min="-100" max="100" value="0" class="motor-slider" data-motor="left"></td>
+                        <td>
+                            <input type="range" min="-100" max="100" value="0" class="motor-slider" data-motor="left">
+                            <span id="left-motor-value-{{ $vehicle->id }}">0</span>
+                        </td>
                     </tr>
                     <tr>
                         <td>Right Motor</td>
-                        <td><input type="range" min="-100" max="100" value="0" class="motor-slider" data-motor="right"></td>
+                        <td>
+                            <input type="range" min="-100" max="100" value="0" class="motor-slider" data-motor="right">
+                            <span id="right-motor-value-{{ $vehicle->id }}">0</span>
+                        </td>
                     </tr>
                 </table>
                 <table style="width: 100%; margin-top: 10px;">
                     <caption>Light Controls</caption>
                     <tr>
-                        <td><button class="light-button" data-light="headlights">Headlights</button></td>
-                        <td><button class="light-button" data-light="high_beams">High Beams</button></td>
+                        <td><button class="light-button" data-light="headlights">Headlights</button> <span id="headlights-status-{{ $vehicle->id }}">(Off)</span></td>
+                        <td><button class="light-button" data-light="high_beams">High Beams</button> <span id="high_beams-status-{{ $vehicle->id }}">(Off)</span></td>
                     </tr>
                     <tr>
-                        <td><button class="light-button" data-light="fog_lights">Fog Lights</button></td>
+                        <td><button class="light-button" data-light="fog_lights">Fog Lights</button> <span id="fog_lights-status-{{ $vehicle->id }}">(Off)</span></td>
                         <td></td>
                     </tr>
                     <tr>
-                        <td><button class="light-button" data-light="left_blinker">Left Blinker</button></td>
-                        <td><button class="light-button" data-light="right_blinker">Right Blinker</button></td>
+                        <td><button class="light-button" data-light="left_blinker">Left Blinker</button> <span id="left_blinker-status-{{ $vehicle->id }}">(Off)</span></td>
+                        <td><button class="light-button" data-light="right_blinker">Right Blinker</button> <span id="right_blinker-status-{{ $vehicle->id }}">(Off)</span></td>
                     </tr>
                 </table>
             </td>
