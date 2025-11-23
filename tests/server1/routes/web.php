@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 
 Route::get('/', function () {
@@ -18,7 +19,8 @@ Route::get('/xtmp1', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $vehicles = Auth::user()->vehicles;
+    return view('dashboard', ['vehicles' => $vehicles]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
