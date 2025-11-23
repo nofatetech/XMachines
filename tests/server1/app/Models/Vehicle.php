@@ -2,17 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Vehicle extends Model
 {
+    use HasFactory;
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'name', // Assuming 'name' is a fillable attribute
+        'user_id',
+        'name',
+        'type',
+        'status',
         'energy',
         'happiness',
         'last_interaction_at',
@@ -26,4 +31,12 @@ class Vehicle extends Model
     protected $casts = [
         'last_interaction_at' => 'datetime',
     ];
+
+    /**
+     * Get the user that owns the vehicle.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
