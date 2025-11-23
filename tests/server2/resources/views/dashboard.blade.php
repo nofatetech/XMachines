@@ -35,27 +35,152 @@
     {{-- Load Echo once --}}
     @vite(['resources/js/echo.js'])
 
-    {{-- ONE single Echo listener for BOTH events --}}
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            Echo.channel('public')
-                .listen('TestBroadcast', (e) => {
-                    document.getElementById('msg').innerText = e.message || 'Test OK';
-                    console.log("OK!", e.message);
-                })
-                .listen('VehicleStatusUpdated', (e) => {   // ← THIS LINE FIXED
-                    console.log('Vehicle update received!', e);
+        {{-- ONE single Echo listener for BOTH events --}}
 
-                                const card = document.getElementById(`vehicle-${e.vehicle.id}`);
-                                if (card) {
-                                    fetch(`/vehicle-card-partial/${e.vehicle.id}?t=${Date.now()}`)
-                                        .then(r => r.text())
-                                        .then(html => {
-                                            card.outerHTML = html;
-                                        });
-                                }                });
-        });
-    </script>
-@endpush
-</x-app-layout>
+    @push('scripts')
+
+        <script>
+
+            document.addEventListener('DOMContentLoaded', () => {
+
+                Echo.channel('public')
+
+                    .listen('TestBroadcast', (e) => {
+
+                        document.getElementById('msg').innerText = e.message || 'Test OK';
+
+                        console.log("OK!", e.message);
+
+                    })
+
+                    .listen('VehicleStatusUpdated', (e) => {   // ← THIS LINE FIXED
+
+                        console.log('Vehicle update received!', e);
+
+    
+
+                                    const card = document.getElementById(`vehicle-${e.vehicle.id}`);
+
+                                    if (card) {
+
+                                        fetch(`/vehicle-card-partial/${e.vehicle.id}?t=${Date.now()}`)
+
+                                            .then(r => r.text())
+
+                                            .then(html => {
+
+                                                card.outerHTML = html;
+
+                                            });
+
+                                    }                });
+
+    
+
+                // Function to calculate human-readable time difference
+
+                function timeAgo(date) {
+
+                    const seconds = Math.floor((new Date() - date) / 1000);
+
+                    if (seconds < 2) return "just now";
+
+                    let interval = seconds / 31536000;
+
+                    if (interval > 1) return Math.floor(interval) + " years ago";
+
+                    interval = seconds / 2592000;
+
+                    if (interval > 1) return Math.floor(interval) + " months ago";
+
+                    interval = seconds / 86400;
+
+                    if (interval > 1) return Math.floor(interval) + " days ago";
+
+                    interval = seconds / 3600;
+
+                    if (interval > 1) return Math.floor(interval) + " hours ago";
+
+                    interval = seconds / 60;
+
+                    if (interval > 1) return Math.floor(interval) + " minutes ago";
+
+                    return Math.floor(seconds) + " seconds ago";
+
+                }
+
+    
+
+                // Periodic UI updater
+
+                setInterval(() => {
+
+                    const vehicleCards = document.querySelectorAll('.vehicle-card');
+
+                    vehicleCards.forEach(card => {
+
+                        const lastSeenStr = card.dataset.lastSeen;
+
+                        if (!lastSeenStr) return;
+
+    
+
+                        const lastSeenDate = new Date(lastSeenStr);
+
+                        const secondsAgo = Math.floor((new Date() - lastSeenDate) / 1000);
+
+    
+
+                        const statusEl = card.querySelector('.vehicle-status');
+
+                        const lastSeenEl = card.querySelector('.vehicle-last-seen span');
+
+    
+
+                        // Update status and card color
+
+                        if (secondsAgo < 5) {
+
+                            statusEl.textContent = 'ONLINE';
+
+                            statusEl.classList.remove('text-red-600');
+
+                            statusEl.classList.add('text-green-600');
+
+                            card.classList.remove('bg-gray-100');
+
+                            card.classList.add('bg-green-50', 'border-green-300');
+
+                        } else {
+
+                            statusEl.textContent = 'OFFLINE';
+
+                            statusEl.classList.remove('text-green-600');
+
+                            statusEl.classList.add('text-red-600');
+
+                            card.classList.remove('bg-green-50', 'border-green-300');
+
+                            card.classList.add('bg-gray-100');
+
+                        }
+
+    
+
+                        // Update last seen text
+
+                        lastSeenEl.textContent = timeAgo(lastSeenDate);
+
+                    });
+
+                }, 1000); // Update every second
+
+            });
+
+        </script>
+
+    @endpush
+
+    </x-app-layout>
+
+    

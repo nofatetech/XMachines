@@ -33,7 +33,7 @@ class Vehicle extends Model
 
     public function isOnline(): bool
     {
-        return $this->last_seen && $this->last_seen->diffInMinutes(now()) < 2;
+        return $this->last_seen && $this->last_seen->diffInSeconds(now()) < 5;
     }
 
 }
