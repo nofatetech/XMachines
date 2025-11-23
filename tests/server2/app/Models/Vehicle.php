@@ -17,7 +17,19 @@ class Vehicle extends Model
         'last_seen' => 'datetime',
     ];
 
-    protected $fillable = ['name', 'status', 'description'];
+    protected $fillable = [
+        'name',
+        'status',
+        'description',
+        'raw_status',
+        'batt',
+        'left',
+        'right',
+        'highbeam',
+        'fog',
+        'hazard',
+        'last_seen',
+    ];
 
     public function isOnline(): bool
     {

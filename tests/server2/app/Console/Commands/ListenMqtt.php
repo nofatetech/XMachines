@@ -52,12 +52,17 @@ class ListenMqtt extends Command
             $topicParts = explode('/', $topic);
             $vehicleId = $topicParts[1];
 
+            $payload = $data;
+
             $this->info("DEBUG: Extracted vehicleId: {$vehicleId}");
 
             // Use the vehicle's ID from the payload to update its record
             // in the server's database.
             if ($vehicleId) {
                 $this->info("DEBUG: Inside if(\$vehicleId) block for vehicle #{$vehicleId}");
+                // $this->info("DEBUG PAYLOAD: ");
+                // $this->info($payload['right']);
+                
 
 
                 $vehicle = \App\Models\Vehicle::findOrFail($vehicleId);
@@ -65,6 +70,7 @@ class ListenMqtt extends Command
                 $vehicle->update([
                     'raw_status' => $payload,
                     'batt'       => $payload['batt'] ?? null,
+                    // 'batt'       => rand(33, 99),
                     'left'       => $payload['left'] ?? 0,
                     'right'      => $payload['right'] ?? 0,
                     'highbeam'   => $payload['highbeam'] ?? false,
