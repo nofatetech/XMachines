@@ -18,8 +18,8 @@ class VehicleSeeder extends Seeder
         $user = User::first();
         if (!$user) {
             $user = User::factory()->create([
-                'name' => 'Test User',
-                'email' => 'test@example.com',
+                'name' => 'Test User 1',
+                'email' => 'test1@example.com',
             ]);
         }
 

@@ -10,6 +10,7 @@ php artisan serve
 
 composer run dev
 
+/dev-login/1
 
 
 
