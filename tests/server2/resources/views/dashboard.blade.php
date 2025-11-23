@@ -36,34 +36,26 @@
     @vite(['resources/js/echo.js'])
 
     {{-- ONE single Echo listener for BOTH events --}}
-    @push('scripts')
-        <script>
-            alert('ss');
-            document.addEventListener('DOMContentLoaded', () => {
-                console.log('Echo connected to local Reverb');
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Echo.channel('public')
+                .listen('TestBroadcast', (e) => {
+                    document.getElementById('msg').innerText = e.message || 'Test OK';
+                })
+                .listen('VehicleStatusUpdated', (e) => {   // ← THIS LINE FIXED
+                    console.log('Vehicle update received!', e);
 
-                Echo.channel('public')
-                    // Keep your test broadcast
-                    .listen('TestBroadcast', (e) => {
-                        document.getElementById('msg').innerText = e.message || 'Test received!';
-                        console.log('TestBroadcast:', e.message);
-                    })
-
-                    // Live vehicle updates
-                    .listen('VehicleStatusUpdated', (e) => {
-                        const vehicle = e.vehicle;
-                        const card = document.getElementById(`vehicle-${vehicle.id}`);
-
-                        if (card) {
-                            fetch(`/vehicle-partial/${vehicle.id}?t=${Date.now()}`)
-                                .then(r => r.text())
-                                .then(html => {
-                                    card.outerHTML = html;
-                                    console.log(`Vehicle ${vehicle.id} updated live`);
-                                });
-                        }
-                    });
-            });
-        </script>
-    @endpush
+                    const card = document.getElementById(`vehicle-${e.vehicle.id}`);
+                    if (card) {
+                        fetch(`/vehicle-partial/${e.vehicle.id}?t=${Date.now()}`)
+                            .then(r => r.text())
+                            .then(html => {
+                                card.outerHTML = html;
+                            });
+                    }
+                });
+        });
+    </script>
+@endpush
 </x-app-layout>

@@ -10,10 +10,10 @@ User::create(['name'=>'admin','email'=>'admin@test.com','password'=>bcrypt('1231
 
 
 php artisan tinker
->>> event(new App\Events\TestBroadcast("It works 100% locally!"));
+event(new App\Events\TestBroadcast("It works 100% locally!"));
 
 $vehicle = \App\Models\Vehicle::find(1);
-$vehicle->batt = 4.21;
+$vehicle->batt = 4.22;
 $vehicle->left = 1;
 $vehicle->right = 0;
 $vehicle->highbeam = true;

@@ -14,17 +14,22 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class VehicleStatusUpdated 
-implements ShouldBroadcastNow //
+// implements ShouldBroadcastNow //
 {
     // use Dispatchable, InteractsWithSockets, SerializesModels;
-    use Dispatchable, InteractsWithSockets;
+    // use Dispatchable, InteractsWithSockets;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public Vehicle $vehicle;
+
 
     /**
      * Create a new event instance.
      */
-    public function __construct(public Vehicle $vehicle)
+    public function __construct(Vehicle $vehicle)
     {
         //
+        $this->vehicle = $vehicle;
     }
 
     /**
