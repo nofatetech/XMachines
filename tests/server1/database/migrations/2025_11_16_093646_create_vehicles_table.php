@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('status')->default('offline');
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }
