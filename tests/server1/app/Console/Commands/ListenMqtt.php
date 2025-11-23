@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\VehicleStatusUpdated;
 use App\Models\Vehicle;
 use Illuminate\Console\Command;
 use PhpMqtt\Client\MqttClient;
@@ -57,6 +58,18 @@ class ListenMqtt extends Command
                     $data                  // Update with the new data from the payload
                 );
                 $this->info("Updated vehicle #{$data['id']}");
+
+                // Fire the event to broadcast the telemetry data to the frontend
+                VehicleStatusUpdated::dispatch(
+                    vehicleId: $data['id'],
+                    battery: $data['battery'] ?? null,
+                    status: $data['status'] ?? null,
+                    wifi: $data['wifi'] ?? null,
+                    energy: $data['energy'] ?? null,
+                    happiness: $data['happiness'] ?? null,
+                    ai_detected_objects: $data['ai_detected_objects'] ?? null
+                );
+                $this->info("Dispatched VehicleStatusUpdated event for vehicle #{$data['id']}");
             }
         }, 0);
 
@@ -71,7 +84,7 @@ class ListenMqtt extends Command
             if (isset($data['action'])) {
                 // $this->info("Vehicle #{$vehicleId} - Action: {$data['action']}, Speed: {$data['speed'] ?? 'N/A'}");
 
-                $speed = isset($data['speed']) ? $data['speed'] : 'N/A';
+                $speed = isset($data['speed']) ? $speed = $data['speed'] : 'N/A';
                 $this->info("Vehicle #{$vehicleId} - Action: {$data['action']}, Speed: {$speed}");
 
                 // Further actions can be added here, e.g., logging to a database,

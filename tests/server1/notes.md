@@ -1,5 +1,18 @@
 
 
+php artisan mqtt:listen
+
+php artisan reverb:start
+
+php artisan vehicle:live
+
+php artisan serve
+
+composer run dev
+
+
+
+
 hostname -i
 
 sudo ufw status
