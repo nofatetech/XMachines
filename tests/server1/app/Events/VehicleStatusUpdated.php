@@ -19,12 +19,17 @@ class VehicleStatusUpdated implements ShouldBroadcast
      */
     public function __construct(
         public int $vehicleId,
-        public ?int $battery = null,
+        public ?int $left = null,
+        public ?int $right = null,
+        public ?int $batt = null,
+        public ?bool $highbeam = null,
+        public ?bool $fog = null,
+        public ?bool $hazard = null,
         public ?string $status = null,
         public ?int $wifi = null,
         public ?int $energy = null,
         public ?int $happiness = null,
-        public ?array $ai_detected_objects = null,
+        public ?array $ai_detected_objects = null
     ) {
         //
     }
@@ -47,5 +52,30 @@ class VehicleStatusUpdated implements ShouldBroadcast
     public function broadcastAs(): string
     {
         return 'VehicleStatusUpdated';
+    }
+
+    /**
+     * Get the data to broadcast.
+     *
+     * @return array
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'vehicleStatus' => [
+                'id' => $this->vehicleId,
+                'left' => $this->left,
+                'right' => $this->right,
+                'batt' => $this->batt,
+                'highbeam' => $this->highbeam,
+                'fog' => $this->fog,
+                'hazard' => $this->hazard,
+                'status' => $this->status,
+                'wifi' => $this->wifi,
+                'energy' => $this->energy,
+                'happiness' => $this->happiness,
+                'ai_detected_objects' => $this->ai_detected_objects,
+            ]
+        ];
     }
 }

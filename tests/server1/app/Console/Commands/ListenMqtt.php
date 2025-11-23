@@ -49,27 +49,53 @@ class ListenMqtt extends Command
             $this->info("Received message on topic [{$topic}]: {$message}");
 
             $data = json_decode($message, true);
+            $topicParts = explode('/', $topic);
+            $vehicleId = $topicParts[1];
+
+            $this->info("DEBUG: Extracted vehicleId: {$vehicleId}");
 
             // Use the vehicle's ID from the payload to update its record
             // in the server's database.
-            if (isset($data['id'])) {
-                Vehicle::updateOrCreate(
-                    ['id' => $data['id']], // Find vehicle by its unique ID
-                    $data                  // Update with the new data from the payload
-                );
-                $this->info("Updated vehicle #{$data['id']}");
+            if ($vehicleId) {
+                $this->info("DEBUG: Inside if(\$vehicleId) block for vehicle #{$vehicleId}");
 
-                // Fire the event to broadcast the telemetry data to the frontend
-                VehicleStatusUpdated::dispatch(
-                    vehicleId: $data['id'],
-                    battery: $data['battery'] ?? null,
-                    status: $data['status'] ?? null,
-                    wifi: $data['wifi'] ?? null,
-                    energy: $data['energy'] ?? null,
-                    happiness: $data['happiness'] ?? null,
-                    ai_detected_objects: $data['ai_detected_objects'] ?? null
+                $fillableData = [];
+                $vehicleFillable = (new Vehicle())->getFillable();
+
+                foreach ($data as $key => $value) {
+                    if (in_array($key, $vehicleFillable)) {
+                        $fillableData[$key] = $value;
+                    }
+                }
+
+                Vehicle::updateOrCreate(
+                    ['id' => $vehicleId], // Find vehicle by its unique ID
+                    $fillableData          // Update with only fillable data from the payload
                 );
-                $this->info("Dispatched VehicleStatusUpdated event for vehicle #{$data['id']}");
+                $this->info("Updated vehicle #{$vehicleId}");
+
+                $this->info("DEBUG: Attempting to dispatch VehicleStatusUpdated event for vehicle #{$vehicleId}");
+                try {
+                    // Fire the event to broadcast the telemetry data to the frontend
+                    VehicleStatusUpdated::dispatch(
+                        $vehicleId,
+                        $data['left'] ?? null,
+                        $data['right'] ?? null,
+                        $data['batt'] ?? null,
+                        $data['highbeam'] ?? null,
+                        $data['fog'] ?? null,
+                        $data['hazard'] ?? null,
+                        $data['status'] ?? null,
+                        $data['wifi'] ?? null,
+                        $data['energy'] ?? null,
+                        $data['happiness'] ?? null,
+                        $data['ai_detected_objects'] ?? null
+                    );
+                    $this->info("Dispatched VehicleStatusUpdated event for vehicle #{$vehicleId}");
+                } catch (\Throwable $e) { // Catch Throwable instead of just Exception
+                    $this->error("ERROR: Failed to dispatch VehicleStatusUpdated event for vehicle #{$vehicleId}. Throwable: " . $e->getMessage());
+                    $this->error($e->getTraceAsString()); // Log full trace for more details
+                }
             }
         }, 0);
 
