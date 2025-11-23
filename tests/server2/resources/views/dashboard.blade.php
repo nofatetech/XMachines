@@ -14,4 +14,23 @@
             </div>
         </div>
     </div>
+
+    <div class="p-6">
+        <div id="msg" class="text-2xl font-bold text-green-600">Waiting for message...</div>
+    </div>
+
+    {{-- Load Echo + Reverb connection --}}
+    @vite(['resources/js/echo.js'])
+
+    {{-- Listen for the broadcast --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Echo.channel('public')
+                .listen('TestBroadcast', (e) => {
+                    document.getElementById('msg').innerText = e.message || 'Received!';
+                });
+
+            console.log('Echo connected to local Reverb');
+        });
+    </script>
 </x-app-layout>
