@@ -13,8 +13,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class VehicleStatusUpdated 
-// implements ShouldBroadcastNow //
+class VehicleStatusUpdated implements ShouldBroadcastNow
 {
     // use Dispatchable, InteractsWithSockets, SerializesModels;
     // use Dispatchable, InteractsWithSockets;
@@ -48,7 +47,7 @@ class VehicleStatusUpdated
     public function broadcastWith(): array
     {
         return [
-            'vehicle' => $this->vehicle->loadMissing('id', 'name', 'status', 'batt', 'left', 'right', 'highbeam', 'fog', 'hazard', 'last_seen', 'raw_status')
+            'vehicle' => $this->vehicle->toArray()
         ];
     }
 }

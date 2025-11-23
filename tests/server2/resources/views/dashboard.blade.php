@@ -42,19 +42,19 @@
             Echo.channel('public')
                 .listen('TestBroadcast', (e) => {
                     document.getElementById('msg').innerText = e.message || 'Test OK';
+                    console.log("OK!", e.message);
                 })
                 .listen('VehicleStatusUpdated', (e) => {   // ← THIS LINE FIXED
                     console.log('Vehicle update received!', e);
 
-                    const card = document.getElementById(`vehicle-${e.vehicle.id}`);
-                    if (card) {
-                        fetch(`/vehicle-partial/${e.vehicle.id}?t=${Date.now()}`)
-                            .then(r => r.text())
-                            .then(html => {
-                                card.outerHTML = html;
-                            });
-                    }
-                });
+                                const card = document.getElementById(`vehicle-${e.vehicle.id}`);
+                                if (card) {
+                                    fetch(`/vehicle-card-partial/${e.vehicle.id}?t=${Date.now()}`)
+                                        .then(r => r.text())
+                                        .then(html => {
+                                            card.outerHTML = html;
+                                        });
+                                }                });
         });
     </script>
 @endpush

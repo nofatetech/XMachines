@@ -13,12 +13,13 @@ php artisan tinker
 event(new App\Events\TestBroadcast("It works 100% locally!"));
 
 $vehicle = \App\Models\Vehicle::find(1);
-$vehicle->batt = 4.22;
+$vehicle->batt = 4.50;
 $vehicle->left = 1;
 $vehicle->right = 0;
 $vehicle->highbeam = true;
 $vehicle->last_seen = now();
 $vehicle->save();
+event(new \App\Events\VehicleStatusUpdated($vehicle));
 broadcast(new \App\Events\VehicleStatusUpdated($vehicle));
 
 
