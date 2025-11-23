@@ -9,6 +9,20 @@ npm install && npm run build
 User::create(['name'=>'admin','email'=>'admin@test.com','password'=>bcrypt('123123')]);
 
 
+php artisan tinker
+>>> event(new App\Events\TestBroadcast("It works 100% locally!"));
+
+$vehicle = \App\Models\Vehicle::find(1);
+$vehicle->batt = 4.21;
+$vehicle->left = 1;
+$vehicle->right = 0;
+$vehicle->highbeam = true;
+$vehicle->last_seen = now();
+$vehicle->save();
+broadcast(new \App\Events\VehicleStatusUpdated($vehicle));
+
+
+
 ✦ To migrate this project's functionality to a fresh Laravel install:
 
    1. Setup:

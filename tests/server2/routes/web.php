@@ -18,6 +18,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Route::get('/vehicle-card-partial/{vehicle}', [VehicleController::class, 'getVehicleCardPartial'])->name('vehicle.card.partial');
+Route::get('/vehicle-card-partial/{vehicle}', [VehicleController::class, 'getVehicleCardPartial'])->name('vehicle.card.partial');
+
+
+// Route::get('/vehicle-partial/{id}', function ($id) {
+//     $vehicle = \App\Models\Vehicle::findOrFail($id);
+//     return view('components.vehicle-card', compact('vehicle'));
+// });
 
 require __DIR__.'/auth.php';

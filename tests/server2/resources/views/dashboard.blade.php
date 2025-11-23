@@ -1,3 +1,4 @@
+{{-- resources/views/dashboard.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -6,91 +7,63 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    {{ __("You're logged in!") }}
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
+
+            {{-- Simple test message (kept forever) --}}
+            <div class="bg-white shadow-sm rounded-lg p-6 text-center">
+                <div id="msg" class="text-3xl font-bold text-green-600">
+                    Waiting for test broadcast...
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="p-6">
-        <div id="msg" class="text-2xl font-bold text-green-600">Waiting for message...</div>
-    </div>
+            {{-- Live vehicles list --}}
+            <div class="bg-white shadow-sm rounded-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">
+                    Live Vehicle Tracking – 100% Local Reverb + MQTT
+                </h2>
 
-    {{-- Load Echo + Reverb connection --}}
-    @vite(['resources/js/echo.js'])
-
-    {{-- Listen for the broadcast --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            Echo.channel('public')
-                .listen('TestBroadcast', (e) => {
-                    document.getElementById('msg').innerText = e.message || 'Received!';
-                });
-
-            console.log('Echo connected to local Reverb');
-        });
-    </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="py-12">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6 text-gray-900">
-                <h2 class="text-2xl font-bold mb-6">Live Vehicle Status</h2>
-
-                <div id="vehicles-list">
+                <div id="vehicles-list" class="space-y-4">
                     @foreach(\App\Models\Vehicle::all() as $vehicle)
                         <x-vehicle-card :vehicle="$vehicle" />
                     @endforeach
                 </div>
             </div>
+
         </div>
     </div>
-</div>
 
-<!-- @ vite(['resources/js/echo.js']) -->
-@push('scripts')
+    {{-- Load Echo once --}}
+    @vite(['resources/js/echo.js'])
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            Echo.channel('public')
-                .listen('VehicleStatusUpdated', (e) => {
-                    const vehicle = e.vehicle;
-                    const card = document.getElementById(`vehicle-${vehicle.id}`);
-                    if (card) {
-                        fetch(`/vehicle-card-partial/${vehicle.id}`)
-                            .then(response => response.text())
-                            .then(html => {
-                                card.outerHTML = html;
-                            })
-                            .catch(error => {
-                                console.error('Error fetching vehicle card partial:', error);
-                            });
-                    }
-                });
-        });
-    </script>
-@endpush
+    {{-- ONE single Echo listener for BOTH events --}}
+    @push('scripts')
+        <script>
+            alert('ss');
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('Echo connected to local Reverb');
 
+                Echo.channel('public')
+                    // Keep your test broadcast
+                    .listen('TestBroadcast', (e) => {
+                        document.getElementById('msg').innerText = e.message || 'Test received!';
+                        console.log('TestBroadcast:', e.message);
+                    })
 
+                    // Live vehicle updates
+                    .listen('VehicleStatusUpdated', (e) => {
+                        const vehicle = e.vehicle;
+                        const card = document.getElementById(`vehicle-${vehicle.id}`);
 
-
-
-
-
-
+                        if (card) {
+                            fetch(`/vehicle-partial/${vehicle.id}?t=${Date.now()}`)
+                                .then(r => r.text())
+                                .then(html => {
+                                    card.outerHTML = html;
+                                    console.log(`Vehicle ${vehicle.id} updated live`);
+                                });
+                        }
+                    });
+            });
+        </script>
+    @endpush
 </x-app-layout>
