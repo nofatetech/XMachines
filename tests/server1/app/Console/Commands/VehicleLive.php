@@ -64,7 +64,7 @@ class VehicleLive extends Command
             $this->info("Energy: {$vehicle->energy}, Happiness: {$vehicle->happiness}");
 
             // Publish status to MQTT
-            $topic = "vehicles/{$vehicle->id}/status";
+            $topic = "vehicle/{$vehicle->id}/status";
             $payload = $vehicle->toJson();
             $mqtt->publish($topic, $payload, 0);
             
