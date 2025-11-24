@@ -19,6 +19,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/vehicle-card-partial/{vehicle}', [VehicleController::class, 'getVehicleCardPartial'])->name('vehicle.card.partial');
+Route::post('/vehicle/{vehicle}/control', [VehicleController::class, 'control'])->name('vehicle.control');
 
 
 // Route::get('/vehicle-partial/{id}', function ($id) {

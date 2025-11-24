@@ -175,6 +175,60 @@
 
                 }, 1000); // Update every second
 
+                // Delegated event listener for vehicle controls
+                const vehiclesList = document.getElementById('vehicles-list');
+                vehiclesList.addEventListener('click', function(event) {
+                    const button = event.target.closest('.control-button');
+                    if (!button) return;
+
+                    const vehicleId = button.dataset.vehicleId;
+                    const action = button.dataset.action;
+
+                    function sendControlCommand(vehicleId, payload) {
+                        const url = `/vehicle/${vehicleId}/control`;
+                        fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify(payload)
+                        })
+                        .then(response => response.json())
+                        .then(data => console.log('Command sent:', data))
+                        .catch(error => console.error('Error sending command:', error));
+                    }
+
+                    let payload = {};
+                    switch (action) {
+                        case 'update-left': {
+                            const leftValue = document.getElementById(`left-${vehicleId}`).value;
+                            payload = { left: parseInt(leftValue, 10) };
+                            break;
+                        }
+                        case 'update-right': {
+                            const rightValue = document.getElementById(`right-${vehicleId}`).value;
+                            payload = { right: parseInt(rightValue, 10) };
+                            break;
+                        }
+                        case 'toggle-highbeam': {
+                            const newState = button.dataset.state !== 'on';
+                            payload = { highbeam: newState };
+                            break;
+                        }
+                        case 'toggle-fog': {
+                            const newState = button.dataset.state !== 'on';
+                            payload = { fog: newState };
+                            break;
+                        }
+                        case 'toggle-hazard': {
+                            const newState = button.dataset.state !== 'on';
+                            payload = { hazard: newState };
+                            break;
+                        }
+                    }
+                    sendControlCommand(vehicleId, payload);
+                });
             });
 
         </script>
@@ -182,5 +236,3 @@
     @endpush
 
     </x-app-layout>
-
-    

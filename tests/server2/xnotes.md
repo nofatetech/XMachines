@@ -1,8 +1,33 @@
 
+
+
+
+Run
+
+composer run dev
+npm run build && php artisan serve
+php artisan mqtt:listen
 php artisan reverb:start --host=127.0.0.1 --port=8080
 
 
+Reset
+
 npm install && npm run build
+
+php artisan config:clear
+php artisan cache:clear
+composer dump-autoload
+
+│ php artisan clear-compiled && php artisan cache:clear && php artisan view:clear && php artisan route:clear && php        │
+│ artisan config:clear && composer dump-autoload  
+
+
+Install
+
+composer isntall, update
+
+
+php artisan vendor:publish --provider="PhpMqtt\Client\MqttClientServiceProvider" --tag="config"
 
 
 
@@ -10,6 +35,7 @@ User::create(['name'=>'admin','email'=>'admin@test.com','password'=>bcrypt('1231
 
 
 php artisan tinker
+
 event(new App\Events\TestBroadcast("It works 100% locally!"));
 
 $vehicle = \App\Models\Vehicle::find(1);
