@@ -1,7 +1,7 @@
 #include "DisplayHandler.h"
 
 DisplayHandler::DisplayHandler() : 
-  display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RST, OLED_CS) {
+  display(SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, OLED_DC, OLED_RST, OLED_CS) {
 }
 
 void DisplayHandler::setup() {

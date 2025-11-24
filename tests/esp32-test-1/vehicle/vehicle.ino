@@ -3,8 +3,10 @@
 #include "MqttHandler.h"
 #include "VehicleControl.h"
 #include "DisplayHandler.h" // Include DisplayHandler
+#include "MatrixHandler.h" // Add this
 
 DisplayHandler displayHandler; // Create DisplayHandler instance
+MatrixHandler matrixHandler; // Create MatrixHandler instance
 
 unsigned long lastStatus = 0;
 
@@ -30,12 +32,15 @@ void setup() {
   Serial.println(WiFi.localIP());
   displayHandler.showMessage("IP:\n" + WiFi.localIP().toString()); // Display IP address after connection
 
+  matrixHandler.setup(); // Setup the matrix
+  matrixHandler.drawSmile(); // Initial happy face
+
   vehicleSetup();
   setupMqtt();
 }
 
 void loop() {
-  handleMqtt();          // now safe – WiFi is up
+  handleMqtt();
   vehicleLoop();
 
   if (millis() - lastStatus > 2000) {
@@ -43,8 +48,10 @@ void loop() {
     if (client.connected()) {
       vehiclePublishStatus(client);
       displayHandler.showMessage("MQTT Connected\nRunning..."); // Display MQTT status
+      matrixHandler.drawSmile(); // Happy face
     } else {
       displayHandler.showMessage("MQTT Disconnected\nWaiting..."); // Display MQTT disconnected status
+      matrixHandler.drawFrown(); // Sad face
     }
   }
 }
