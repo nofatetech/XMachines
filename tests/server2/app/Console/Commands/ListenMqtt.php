@@ -127,24 +127,34 @@ class ListenMqtt extends Command
             }
         }, 0);
 
-        // // Subscribe to the topic where control commands are published
-        // $mqtt->subscribe('vehicle/+/control', function ($topic, $message) {
-        //     $this->info("Received control command on topic [{$topic}]: {$message}");
-        //     // At this point, the command has been published.
-        //     // The actual vehicle is expected to subscribe to this topic directly.
-        //     // We are just logging it here for visibility within the Laravel app.
-        //     $data = json_decode($message, true);
-        //     $vehicleId = explode('/', $topic)[1]; // Extract vehicle ID from topic
-        //     if (isset($data['action'])) {
-        //         // $this->info("Vehicle #{$vehicleId} - Action: {$data['action']}, Speed: {$data['speed'] ?? 'N/A'}");
+        // Subscribe to the topic where control commands are published
+        $mqtt->subscribe('vehicle/+/control', function ($topic, $message) {
+            $this->info("Received control command on topic [{$topic}]: {$message}");
+            
+            $data = json_decode($message, true);
+            $vehicleId = explode('/', $topic)[1]; // Extract vehicle ID from topic
 
-        //         $speed = isset($data['speed']) ? $speed = $data['speed'] : 'N/A';
-        //         $this->info("Vehicle #{$vehicleId} - Action: {$data['action']}, Speed: {$speed}");
+            if ($vehicleId && !empty($data)) {
+                $vehicle = \App\Models\Vehicle::find($vehicleId);
+                if ($vehicle) {
+                    $updateData = [];
+                    if (isset($data['left'])) {
+                        $updateData['left'] = $data['left'];
+                    }
+                    if (isset($data['right'])) {
+                        $updateData['right'] = $data['right'];
+                    }
 
-        //         // Further actions can be added here, e.g., logging to a database,
-        //         // updating UI in real-time if a WebSocket server is running.
-        //     }
-        // }, 0);
+                    if (!empty($updateData)) {
+                        $vehicle->update($updateData);
+                        $this->info("Vehicle {$vehicleId} control state updated.");
+                        
+                        // Broadcast the update to the frontend
+                        broadcast(new \App\Events\VehicleStatusUpdated($vehicle));
+                    }
+                }
+            }
+        }, 0);
 
         
         $this->info("MQTT bridge listening on vehicle/+/status");

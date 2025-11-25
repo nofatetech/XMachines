@@ -50,6 +50,46 @@ broadcast(new \App\Events\VehicleStatusUpdated($vehicle));
 
 
 
+
+
+
+
+ESP32 / Arduino
+
+
+# Auto-detect the port (works 99 % of the time)
+arduino-cli upload --fqbn esp32:esp32:esp32 --port $(ls /dev/ttyUSB* /dev/ttyACM* | head -1) ~/your_sketch
+
+# Compile + upload + open serial monitor immediately
+arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32 ~/your_sketch && \
+minicom -D /dev/ttyUSB0 -b 115200
+# or use screen:
+# screen /dev/ttyUSB0 115200
+
+
+echo "alias espup='arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32'" >> ~/.bashrc
+source ~/.bashrc
+
+
+
+# Find your ESP32 port (usually /dev/ttyUSB0 or /dev/ttyACM0)
+ls /dev/ttyUSB* /dev/ttyACM*
+
+# Compile only (optional, to check errors)
+arduino-cli compile --fqbn esp32:esp32:esp32 /home/user1/Documents/dev/XMachines/gitrepo_XMachines/tests/esp32-test-1/vehicle
+
+# Compile + upload in one command (most common)
+arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32 /home/user1/Documents/dev/XMachines/gitrepo_XMachines/tests/esp32-test-1/vehicle
+
+
+
+
+
+
+
+
+
+
 ✦ To migrate this project's functionality to a fresh Laravel install:
 
    1. Setup:
