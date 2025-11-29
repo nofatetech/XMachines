@@ -32,6 +32,10 @@
                                             <p>R Motor: <span id="motor-right-{{ $machine->id }}">{{ $machine->motor_right_speed }}</span>%</p>
                                             <p>Fog: <span id="fog-lights-{{ $machine->id }}">{{ $machine->fog_lights_on ? 'On' : 'Off' }}</span></p>
                                         </div>
+                                        <div class="card-actions justify-end mt-4">
+                                            <button class="btn btn-primary btn-sm control-btn" data-machine-id="{{ $machine->id }}" data-command="toggle_lights">Toggle Lights</button>
+                                            <button class="btn btn-secondary btn-sm control-btn" data-machine-id="{{ $machine->id }}" data-command="toggle_fog_lights">Toggle Fog</button>
+                                        </div>
                                     </div>
                                 </div>
                             @endforeach
@@ -43,63 +47,9 @@
     </div>
 
     @push('scripts')
-        <script type="module">
-            import Echo from 'laravel-echo';
-            import Pusher from 'pusher-js';
-
-            window.Pusher = Pusher;
-
-            window.Echo = new Echo({
-                broadcaster: 'reverb',
-                key: import.meta.env.VITE_REVERB_APP_KEY,
-                wsHost: import.meta.env.VITE_REVERB_HOST,
-                wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-                wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-                forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
-                enabledTransports: ['ws', 'wss'],
-            });
-
-            document.addEventListener('DOMContentLoaded', function() {
-                const wsStatus = document.getElementById('websocket-status');
-                console.log('DOM Content Loaded. Echo instance:', window.Echo);
-
-                console.log('Binding to state_change event...');
-                window.Echo.connector.pusher.connection.bind('state_change', function(states) {
-                    console.log('WebSocket state changed:', states);
-                    wsStatus.textContent = states.current;
-                    if (states.current === 'connected') {
-                        wsStatus.classList.remove('text-red-500', 'text-yellow-500');
-                        wsStatus.classList.add('text-green-500');
-                    } else if (states.current === 'connecting') {
-                        wsStatus.classList.remove('text-green-500', 'text-red-500');
-                        wsStatus.classList.add('text-yellow-500');
-                    } else {
-                        wsStatus.classList.remove('text-green-500', 'text-yellow-500');
-                        wsStatus.classList.add('text-red-500');
-                    }
-                });
-
-                const machines = @json($machines);
-                machines.forEach(machine => {
-                    window.Echo.channel(`machine.${machine.id}.status`)
-                        .listen('.machine.status-updated', (e) => {
-                            console.log(`Received machine.status-updated event for machine ${machine.id}:`, e);
-                            const machineId = e.machine.id;
-                            const machineCard = document.getElementById(`machine-${machineId}`);
-                            if (machineCard) {
-                                const statusBadge = document.getElementById(`status-${machineId}`);
-                                statusBadge.textContent = e.machine.is_online ? 'Online' : 'Offline';
-                                statusBadge.className = `badge ${e.machine.is_online ? 'badge-success' : 'badge-error'}`;
-                                
-                                document.getElementById(`temp-${machineId}`).textContent = e.machine.temperature;
-                                document.getElementById(`motor-left-${machineId}`).textContent = e.machine.motor_left_speed;
-                                document.getElementById(`motor-right-${machineId}`).textContent = e.machine.motor_right_speed;
-                                document.getElementById(`lights-${machineId}`).textContent = e.machine.lights_on ? 'On' : 'Off';
-                                document.getElementById(`fog-lights-${machineId}`).textContent = e.machine.fog_lights_on ? 'On' : 'Off';
-                            }
-                        });
-                });
-            });
+        <script>
+            // Expose machine data to the global window object
+            window.xMachines = @json($machines);
         </script>
     @endpush
 </x-app-layout>

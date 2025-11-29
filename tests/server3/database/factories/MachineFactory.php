@@ -24,13 +24,13 @@ class MachineFactory extends Factory
             'name' => 'Machine ' . $machineNumber++,
             'small_description' => $this->faker->sentence,
             'description' => $this->faker->paragraph,
-            'is_active' => $this->faker->boolean,
-            'temperature' => $this->faker->randomFloat(2, 0, 100),
-            'is_online' => $this->faker->boolean,
-            'motor_left_speed' => $this->faker->numberBetween(0, 100),
-            'motor_right_speed' => $this->faker->numberBetween(0, 100),
-            'lights_on' => $this->faker->boolean,
-            'fog_lights_on' => $this->faker->boolean,
+            'is_active' => true,
+            'temperature' => 0,
+            'is_online' => false,
+            'motor_left_speed' => 0,
+            'motor_right_speed' => 0,
+            'lights_on' => false,
+            'fog_lights_on' => false,
         ];
     }
 }
