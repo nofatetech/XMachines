@@ -20,6 +20,8 @@ class Machine extends Model
         'name',
         'small_description',
         'description',
+        'happiness',
+        'hunger',
         'is_active',
         'temperature',
         'is_online',
@@ -27,6 +29,7 @@ class Machine extends Model
         'motor_right_speed',
         'lights_on',
         'fog_lights_on',
+        'is_auto_driving',
     ];
 
     /**
@@ -42,5 +45,8 @@ class Machine extends Model
         'motor_left_speed' => 'integer',
         'motor_right_speed' => 'integer',
         'temperature' => 'decimal:2',
+        'happiness' => 'integer',
+        'hunger' => 'integer',
+        'is_auto_driving' => 'boolean',
     ];
 }

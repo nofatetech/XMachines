@@ -1,0 +1,33 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            {{ __('Machine Display') }}
+        </h2>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Local Machine Information:</h3>
+                    <p>Machine ID: {{ $machine->id }}</p>
+                    <p>Local IP: {{ $localIp }}</p>
+
+                    <div class="mt-4">
+                        <x-machine-card :machine="$machine" :showControls="false" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+        <script>
+            // Expose machine data to the global window object
+            window.xMachines = [@json($machine)]; // Array with single machine
+
+            // Also expose local IP if needed in bootstrap.js for other purposes
+            window.xMachineLocalIp = "{{ $localIp }}";
+        </script>
+    @endpush
+</x-app-layout>

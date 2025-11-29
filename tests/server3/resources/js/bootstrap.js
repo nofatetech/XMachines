@@ -74,6 +74,11 @@ if (typeof window.xMachines !== 'undefined') {
                         document.getElementById(`motor-right-${machineId}`).textContent = e.machine.motor_right_speed;
                         document.getElementById(`lights-${machineId}`).textContent = e.machine.lights_on ? 'On' : 'Off';
                         document.getElementById(`fog-lights-${machineId}`).textContent = e.machine.fog_lights_on ? 'On' : 'Off';
+                        
+                        // Update new Tamagotchi fields
+                        document.getElementById(`happiness-${machineId}`).textContent = e.machine.happiness;
+                        document.getElementById(`hunger-${machineId}`).textContent = e.machine.hunger;
+                        document.getElementById(`auto-driving-${machineId}`).textContent = e.machine.is_auto_driving ? 'On' : 'Off';
                     }
                 });
         });

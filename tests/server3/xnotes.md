@@ -26,9 +26,9 @@ php artisan reverb:start
 
 ---
 
-### Terminal 3 (for Testing): Simulate a Machine Update
+### Terminal 3 (for Testing - Dashboard Mode): Simulate a Machine Update
 
-To test the system, you can pretend to be an RC car sending a status update. Run this command in a new terminal.
+To test the system when running in `APP_MODE=SERVER`, you can pretend to be an RC car sending a status update. Run this command in a new terminal.
 
 ```bash
 curl http://localhost:8000/machine-update
@@ -36,7 +36,7 @@ curl http://localhost:8000/machine-update
 
 ---
 
-### Important Instructions:
+### Important Instructions (for `APP_MODE=SERVER`):
 
 1.  **Start the Servers:** Make sure both the `php artisan serve` and `php artisan reverb:start` commands are running in their own terminals.
 2.  **Open the Dashboard:** Navigate to your application's URL (e.g., `http://127.0.0.1:8000/dashboard`) in your browser.
@@ -47,7 +47,7 @@ curl http://localhost:8000/machine-update
 ---
 ---
 
-# Raspberry Pi Python Client (`pi_client.py`)
+# Raspberry Pi Python Client (`clients/python/pi_client.py`)
 
 This script is the heart of your physical machine (RC car). It runs on the Raspberry Pi and communicates with the Laravel server.
 
@@ -57,110 +57,34 @@ This script is the heart of your physical machine (RC car). It runs on the Raspb
     ```bash
     pip install requests websocket-client
     ```
-2.  **Save the Code:** Save the code below as `pi_client.py` on your Raspberry Pi.
-3.  **Configure:** Change the `MACHINE_ID` and `LARAVEL_HOST` variables at the top of the script.
-4.  **Run:**
+2.  **Save the Code:** The `pi_client.py` script is located at `clients/python/pi_client.py` in this project. Transfer it to your Raspberry Pi.
+3.  **Configure `.env` on the Pi (for the Laravel app on the Pi):**
+    If you're running the Laravel app *on the Pi itself* as a "machine heart" (`APP_MODE=MACHINE`), update its local `.env` file:
+    ```
+    APP_MODE=MACHINE
+    MACHINE_ID=1 # This Pi's ID in the database
+    LEADER_HOST=192.168.1.XXX:8000 # IP of the central server (if any)
+    ```
+4.  **Configure `pi_client.py` (on the Pi):**
+    *   Set the `MACHINE_ID` in `pi_client.py` to match the `MACHINE_ID` set in the Pi's Laravel `.env`. This tells the Python script which machine *it is*. (This can also be set via environment variable on the Pi for robustness).
+    *   Set `LARAVEL_HOST` to `127.0.0.1:8000` if the Laravel app is running *on the same Raspberry Pi*. If it's connecting to a remote leader, use the `LEADER_HOST` value.
+5.  **Run `pi_client.py`:**
     ```bash
-    python pi_client.py
+    python clients/python/pi_client.py
     ```
 
-### Example Python Script:
+### Key aspects of the Python Script:
 
-```python
-import requests
-import websocket
-import json
-import threading
-import time
-import random
+*   **Status Heartbeat:** It sends a POST request to `/api/machine/{MACHINE_ID}/status` (e.g., `http://127.0.0.1:8000/api/machine/1/status`) every 2 seconds with its sensor data.
+*   **Command Listener:** It connects via WebSocket to the Reverb server (e.g., `ws://127.0.0.1:8000/app/{REVERB_APP_KEY}`) and subscribes to `machine.{MACHINE_ID}.control` to receive commands.
+*   **GPIO Integration:** Includes placeholders for you to add your actual `RPi.GPIO` or `pigpio` calls.
+*   **Data Logging:** Sets up and logs data to `machine_{MACHINE_ID}_training_data.csv` for future ML.
 
-# --- CONFIGURATION ---
-MACHINE_ID = 1  # IMPORTANT: Change this for each machine!
-LARAVEL_HOST = "127.0.0.1:8000"  # Use the IP of the computer running Laravel
+---
 
-# --- WebSocket App for Command Listening ---
-def on_message(ws, message):
-    """Called when a new message is received from the server."""
-    data = json.loads(message)
-    event = data.get('event')
-    payload = json.loads(data.get('data', '{}')) # The actual data is a stringified JSON
-    
-    if event == 'machine.control-sent':
-        command = payload.get('command')
-        print(f"---|> Received command: {command}")
-        # --- ADD YOUR GPIO LOGIC HERE ---
-        # Example:
-        # if command == 'toggle_lights':
-        #     toggle_gpio_pin(LIGHTS_PIN)
-        # elif command == 'toggle_fog_lights':
-        #     toggle_gpio_pin(FOG_LIGHTS_PIN)
+**To test a machine running as its own heart:**
 
-def on_error(ws, error):
-    """Called on WebSocket errors."""
-    print(f"WebSocket Error: {error}")
-
-def on_close(ws, close_status_code, close_msg):
-    """Called when the connection is closed."""
-    print("### WebSocket connection closed ###")
-
-def on_open(ws):
-    """Called when the WebSocket connection is established."""
-    print("### WebSocket connection opened ###")
-    # Subscribe to this machine's specific control channel
-    subscription_message = {
-        "event": "pusher:subscribe",
-        "data": {
-            "channel": f"machine.{MACHINE_ID}.control"
-        }
-    }
-    ws.send(json.dumps(subscription_message))
-    print(f"Subscribed to channel: machine.{MACHINE_ID}.control")
-
-def run_websocket_listener():
-    """Sets up and runs the WebSocket listener."""
-    # These details come from your .env file and Reverb config
-    app_key = "some_random_key" # REVERB_APP_KEY from .env
-    ws_url = f"ws://{LARAVEL_HOST}/app/{app_key}"
-    
-    ws = websocket.WebSocketApp(ws_url,
-                              on_open=on_open,
-                              on_message=on_message,
-                              on_error=on_error,
-                              on_close=on_close)
-    ws.run_forever()
-
-# --- Status Heartbeat Thread ---
-def send_status_heartbeat():
-    """Sends machine status to the Laravel API every 2 seconds."""
-    status_url = f"http://{LARAVEL_HOST}/api/machine/{MACHINE_ID}/status"
-    while True:
-        try:
-            # --- GATHER YOUR SENSOR DATA HERE ---
-            payload = {
-                "temperature": round(random.uniform(20.0, 40.0), 2),
-                "motor_left_speed": random.randint(0, 100),
-                "motor_right_speed": random.randint(0, 100),
-                "lights_on": random.choice([True, False]),
-                "fog_lights_on": random.choice([True, False]),
-            }
-            
-            response = requests.post(status_url, json=payload, timeout=2)
-            response.raise_for_status() # Raise an exception for bad status codes
-            
-            print(f"<--- Sent status heartbeat: {response.status_code} - {response.json()}")
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error sending status heartbeat: {e}")
-            
-        time.sleep(2) # Send an update every 2 seconds
-
-
-# --- Main Execution ---
-if __name__ == "__main__":
-    # Start the WebSocket listener in a background thread
-    ws_thread = threading.Thread(target=run_websocket_listener, daemon=True)
-    ws_thread.start()
-
-    # Start the status heartbeat in the main thread
-    send_status_heartbeat()
-```
+1.  **Configure:** Change the `.env` on your local development machine to `APP_MODE=MACHINE` and set `MACHINE_ID` to an existing machine (e.g., `1`).
+2.  **Start Laravel & Reverb:** `php artisan serve` and `php artisan reverb:start` (locally).
+3.  **Run the Python client:** `python clients/python/pi_client.py` (locally, in a third terminal, ensuring `MACHINE_ID` and `LARAVEL_HOST` are set correctly in the Python script itself).
+4.  **Open the Display:** Go to `http://127.0.0.1:8000/display` in your browser. You should see the single machine's card updating.

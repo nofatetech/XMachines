@@ -31,6 +31,9 @@ class MachineFactory extends Factory
             'motor_right_speed' => 0,
             'lights_on' => false,
             'fog_lights_on' => false,
+            'happiness' => 50,
+            'hunger' => 0,
+            'is_auto_driving' => false,
         ];
     }
 }
