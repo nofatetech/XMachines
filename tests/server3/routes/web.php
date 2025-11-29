@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('koolrc-home');
+    return view('xm-home');
 });
 
 // Conditional routing based on APP_MODE
