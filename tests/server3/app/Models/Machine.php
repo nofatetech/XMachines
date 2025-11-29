@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Machine extends Model
+{
+    /** @use HasFactory<\Database\Factories\MachineFactory> */
+    use HasFactory;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'uuid',
+        'name',
+        'small_description',
+        'description',
+        'is_active',
+        'temperature',
+        'is_online',
+        'motor_left_speed',
+        'motor_right_speed',
+        'lights_on',
+        'fog_lights_on',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'is_active' => 'boolean',
+        'is_online' => 'boolean',
+        'lights_on' => 'boolean',
+        'fog_lights_on' => 'boolean',
+        'motor_left_speed' => 'integer',
+        'motor_right_speed' => 'integer',
+        'temperature' => 'decimal:2',
+    ];
+}
