@@ -17,9 +17,11 @@ class MachineFactory extends Factory
      */
     public function definition(): array
     {
+        static $machineNumber = 1;
+
         return [
             'uuid' => Str::uuid(),
-            'name' => $this->faker->words(3, true),
+            'name' => 'Machine ' . $machineNumber++,
             'small_description' => $this->faker->sentence,
             'description' => $this->faker->paragraph,
             'is_active' => $this->faker->boolean,
