@@ -49,4 +49,9 @@ Route::get('/machine-update', function () {
     return response()->json(['status' => 'Machine status updated and event dispatched!', 'machine' => $machine]);
 });
 
+use App\Http\Controllers\Api\MachineStatusController;
+
+// API route for machine status updates (unauthenticated for now)
+Route::post('/api/machine/{machine}/status', [MachineStatusController::class, 'update'])->name('api.machine.status');
+
 require __DIR__.'/auth.php';
