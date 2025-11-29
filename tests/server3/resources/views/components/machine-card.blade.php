@@ -16,6 +16,33 @@
             <p>Hunger: <span id="hunger-{{ $machine->id }}">{{ $machine->hunger }}</span></p>
             <p>Auto-Driving: <span id="auto-driving-{{ $machine->id }}">{{ $machine->is_auto_driving ? 'On' : 'Off' }}</span></p>
         </div>
+
+        <!-- NEW: Mind State Panel -->
+        <div class="mt-4 pt-4 border-t border-base-300">
+            <h3 class="text-xs uppercase font-bold text-gray-400 mb-2">Mind State</h3>
+            <div class="flex items-center gap-4">
+                <!-- Mood Orb -->
+                <div class="flex-shrink-0">
+                    <div id="mood-orb-{{ $machine->id }}"
+                         class="w-16 h-16 rounded-full transition-all duration-500
+                                {{ $machine->is_online ? 'bg-green-500' : 'bg-red-500' }}
+                                {{ $machine->is_auto_driving ? 'animate-pulse-fast' : 'animate-pulse-normal' }}">
+                    </div>
+                </div>
+                <div class="flex-grow">
+                    <!-- Last Thoughts Ticker -->
+                    <div class="text-xs text-gray-500">Last Thoughts:</div>
+                    <p id="last-thought-1-{{ $machine->id }}" class="text-sm italic">"Awaiting input..."</p>
+                    <p id="last-thought-2-{{ $machine->id }}" class="text-sm italic text-gray-400">"..."</p>
+                    <p id="last-thought-3-{{ $machine->id }}" class="text-sm italic text-gray-400">"..."</p>
+                    <!-- Imagination Frame (Placeholder) -->
+                    <div id="imagination-frame-{{ $machine->id }}" class="w-full h-24 bg-base-200 mt-2 rounded flex items-center justify-center hidden">
+                         <span class="text-xs text-gray-500">Imagination will appear here.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @isset($showControls)
             <div class="card-actions justify-end mt-4">
                 <button class="btn btn-primary btn-sm control-btn" data-machine-id="{{ $machine->id }}" data-command="toggle_lights">Toggle Lights</button>
@@ -50,3 +77,35 @@
         @endisset
     </div>
 </div>
+
+<style>
+    @keyframes pulse-normal {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+        }
+    }
+
+    @keyframes pulse-fast {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.07);
+            opacity: 0.7;
+        }
+    }
+
+    .animate-pulse-normal {
+        animation: pulse-normal 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .animate-pulse-fast {
+        animation: pulse-fast 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
