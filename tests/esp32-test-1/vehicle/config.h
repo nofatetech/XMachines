@@ -30,6 +30,20 @@ extern const char* WEBSOCKET_URL;
 
 // Optional sensor
 #define PIN_BATTERY       34
+
+// OLED Display (Hardware SPI)
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_MOSI   23 // HW VSPI
+#define OLED_CLK    18 // HW VSPI
+#define OLED_CS     5  // HW VSPI
+#define OLED_DC     19 // Using PIN_MAIN_LIGHTS pin, was free
+#define OLED_RST    27 // Using LEFT_IN4 pin, was free
+
+// LED Matrix (Hardware I2C)
+#define I2C_SDA 21 // HW I2C
+#define I2C_SCL 22 // HW I2C
+
 #define VREF              3.3f
 #define DIVIDER_RATIO     2.0f
 

@@ -25,18 +25,20 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
       webSocket.sendTXT("{\"action\":\"subscribe\",\"topic\":\"vehicle/1/cmd\"}");
       break;
     case WStype_TEXT:
-      Serial.printf("[WSc] get text: %s\n", payload);
-      JsonDocument doc;
-      if (deserializeJson(doc, payload) == DeserializationError::Ok) {
-        vehicleHandleJson(doc);
-      } else {
-        Serial.println("Warning: [JSON parse failed]");
+      {
+        Serial.printf("[WSc] get text: %s\n", payload);
+        JsonDocument doc;
+        if (deserializeJson(doc, payload) == DeserializationError::Ok) {
+          vehicleHandleJson(doc);
+        } else {
+          Serial.println("Warning: [JSON parse failed]");
+        }
       }
       break;
     case WStype_BIN:
     case WStype_ERROR:
     case WStype_FRAGMENT_TEXT_START:
-    case WS_type_FRAGMENT_BIN_START:
+    case WStype_FRAGMENT_BIN_START:
     case WStype_FRAGMENT:
     case WStype_FRAGMENT_FIN:
       break;

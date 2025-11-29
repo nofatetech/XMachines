@@ -23,14 +23,14 @@ void MatrixHandler::clear() {
 void MatrixHandler::drawSmile() {
     static const uint8_t PROGMEM
       smile_bmp[] =
-      { B00111100,
-        B01000010,
-        B10100101,
-        B10000001,
-        B10100101,
-        B10011001,
-        B01000010,
-        B00111100 };
+      { 0b00111100,
+        0b01000010,
+        0b10100101,
+        0b10000001,
+        0b10100101,
+        0b10011001,
+        0b01000010,
+        0b00111100 };
     matrix.clear();
     matrix.drawBitmap(0, 0, smile_bmp, 8, 8, LED_GREEN); // Green smile
     matrix.writeDisplay();
@@ -39,15 +39,16 @@ void MatrixHandler::drawSmile() {
 void MatrixHandler::drawFrown() {
     static const uint8_t PROGMEM
       frown_bmp[] =
-      { B00111100,
-        B01000010,
-        B10100101,
-        B10000001,
-        B10011001,
-        B10100101,
-        B01000010,
-        B00111100 };
+      { 0b00111100,
+        0b01000010,
+        0b10100101,
+        0b10000001,
+        0b10011001,
+        0b10100101,
+        0b01000010,
+        0b00111100 };
     matrix.clear();
     matrix.drawBitmap(0, 0, frown_bmp, 8, 8, LED_RED); // Red frown
     matrix.writeDisplay();
 }
+
