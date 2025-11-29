@@ -17,8 +17,20 @@
                     </div>
 
                     <div class="mt-6">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Machine Updates:</h3>
-                        <ul id="machine-updates" class="mt-2 space-y-2"></ul>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Connected Machines:</h3>
+                        <div id="machines-grid" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            @foreach($machines as $machine)
+                                <div id="machine-{{ $machine->id }}" class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg shadow">
+                                    <h4 class="text-lg font-semibold">{{ $machine->name }} ({{ $machine->uuid }})</h4>
+                                    <p>Status: <span id="status-{{ $machine->id }}" class="font-medium">{{ $machine->is_online ? 'Online' : 'Offline' }}</span></p>
+                                    <p>Temperature: <span id="temp-{{ $machine->id }}">{{ $machine->temperature }}</span>°C</p>
+                                    <p>Left Motor: <span id="motor-left-{{ $machine->id }}">{{ $machine->motor_left_speed }}</span>%</p>
+                                    <p>Right Motor: <span id="motor-right-{{ $machine->id }}">{{ $machine->motor_right_speed }}</span>%</p>
+                                    <p>Lights: <span id="lights-{{ $machine->id }}">{{ $machine->lights_on ? 'On' : 'Off' }}</span></p>
+                                    <p>Fog Lights: <span id="fog-lights-{{ $machine->id }}">{{ $machine->fog_lights_on ? 'On' : 'Off' }}</span></p>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             </div>
@@ -44,7 +56,6 @@
 
             document.addEventListener('DOMContentLoaded', function() {
                 const wsStatus = document.getElementById('websocket-status');
-                const machineUpdates = document.getElementById('machine-updates');
 
                 window.Echo.connector.pusher.connection.bind('state_change', function(states) {
                     wsStatus.textContent = states.current;
@@ -62,9 +73,16 @@
 
                 window.Echo.channel('machines')
                     .listen('.machine.status-updated', (e) => {
-                        const listItem = document.createElement('li');
-                        listItem.textContent = `Machine ${e.machine.name} (UUID: ${e.machine.uuid}) updated: Temperature=${e.machine.temperature}, Online=${e.machine.is_online ? 'Yes' : 'No'}, Left Motor=${e.machine.motor_left_speed}, Right Motor=${e.machine.motor_right_speed}, Lights=${e.machine.lights_on ? 'On' : 'Off'}, Fog Lights=${e.machine.fog_lights_on ? 'On' : 'Off'}`;
-                        machineUpdates.prepend(listItem);
+                        const machineId = e.machine.id;
+                        const machineCard = document.getElementById(`machine-${machineId}`);
+                        if (machineCard) {
+                            document.getElementById(`status-${machineId}`).textContent = e.machine.is_online ? 'Online' : 'Offline';
+                            document.getElementById(`temp-${machineId}`).textContent = e.machine.temperature;
+                            document.getElementById(`motor-left-${machineId}`).textContent = e.machine.motor_left_speed;
+                            document.getElementById(`motor-right-${machineId}`).textContent = e.machine.motor_right_speed;
+                            document.getElementById(`lights-${machineId}`).textContent = e.machine.lights_on ? 'On' : 'Off';
+                            document.getElementById(`fog-lights-${machineId}`).textContent = e.machine.fog_lights_on ? 'On' : 'Off';
+                        }
                     });
             });
         </script>
