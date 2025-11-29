@@ -33,7 +33,7 @@ class MachineStatusUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('machines'),
+            new Channel('machine.' . $this->machine->id . '.status'),
         ];
     }
 

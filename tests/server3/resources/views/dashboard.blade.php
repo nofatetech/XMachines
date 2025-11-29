@@ -61,8 +61,11 @@
 
             document.addEventListener('DOMContentLoaded', function() {
                 const wsStatus = document.getElementById('websocket-status');
+                console.log('DOM Content Loaded. Echo instance:', window.Echo);
 
+                console.log('Binding to state_change event...');
                 window.Echo.connector.pusher.connection.bind('state_change', function(states) {
+                    console.log('WebSocket state changed:', states);
                     wsStatus.textContent = states.current;
                     if (states.current === 'connected') {
                         wsStatus.classList.remove('text-red-500', 'text-yellow-500');
@@ -76,22 +79,26 @@
                     }
                 });
 
-                window.Echo.channel('machines')
-                    .listen('.machine.status-updated', (e) => {
-                        const machineId = e.machine.id;
-                        const machineCard = document.getElementById(`machine-${machineId}`);
-                        if (machineCard) {
-                            const statusBadge = document.getElementById(`status-${machineId}`);
-                            statusBadge.textContent = e.machine.is_online ? 'Online' : 'Offline';
-                            statusBadge.className = `badge ${e.machine.is_online ? 'badge-success' : 'badge-error'}`;
-                            
-                            document.getElementById(`temp-${machineId}`).textContent = e.machine.temperature;
-                            document.getElementById(`motor-left-${machineId}`).textContent = e.machine.motor_left_speed;
-                            document.getElementById(`motor-right-${machineId}`).textContent = e.machine.motor_right_speed;
-                            document.getElementById(`lights-${machineId}`).textContent = e.machine.lights_on ? 'On' : 'Off';
-                            document.getElementById(`fog-lights-${machineId}`).textContent = e.machine.fog_lights_on ? 'On' : 'Off';
-                        }
-                    });
+                const machines = @json($machines);
+                machines.forEach(machine => {
+                    window.Echo.channel(`machine.${machine.id}.status`)
+                        .listen('.machine.status-updated', (e) => {
+                            console.log(`Received machine.status-updated event for machine ${machine.id}:`, e);
+                            const machineId = e.machine.id;
+                            const machineCard = document.getElementById(`machine-${machineId}`);
+                            if (machineCard) {
+                                const statusBadge = document.getElementById(`status-${machineId}`);
+                                statusBadge.textContent = e.machine.is_online ? 'Online' : 'Offline';
+                                statusBadge.className = `badge ${e.machine.is_online ? 'badge-success' : 'badge-error'}`;
+                                
+                                document.getElementById(`temp-${machineId}`).textContent = e.machine.temperature;
+                                document.getElementById(`motor-left-${machineId}`).textContent = e.machine.motor_left_speed;
+                                document.getElementById(`motor-right-${machineId}`).textContent = e.machine.motor_right_speed;
+                                document.getElementById(`lights-${machineId}`).textContent = e.machine.lights_on ? 'On' : 'Off';
+                                document.getElementById(`fog-lights-${machineId}`).textContent = e.machine.fog_lights_on ? 'On' : 'Off';
+                            }
+                        });
+                });
             });
         </script>
     @endpush
