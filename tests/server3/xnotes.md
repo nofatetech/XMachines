@@ -51,27 +51,27 @@ curl http://localhost:8000/machine-update
 
 This script is the heart of your physical machine (RC car). It runs on the Raspberry Pi and communicates with the Laravel server.
 
-### Setup on the Raspberry Pi:
+### Setup on the Raspberry Pi (or your local dev machine to test):
 
 1.  **Install Python libraries:**
     ```bash
-    pip install requests websocket-client
+    pip install requests websocket-client python-dotenv
     ```
-2.  **Save the Code:** The `pi_client.py` script is located at `clients/python/pi_client.py` in this project. Transfer it to your Raspberry Pi.
-3.  **Configure `.env` on the Pi (for the Laravel app on the Pi):**
+2.  **Locate the Code:** The `pi_client.py` script is located at `clients/python/pi_client.py` in this project.
+3.  **Configure `.env` (for the Laravel app on the Pi):**
     If you're running the Laravel app *on the Pi itself* as a "machine heart" (`APP_MODE=MACHINE`), update its local `.env` file:
     ```
     APP_MODE=MACHINE
     MACHINE_ID=1 # This Pi's ID in the database
-    LEADER_HOST=192.168.1.XXX:8000 # IP of the central server (if any)
+    LEADER_HOST=192.168.1.XXX:8000 # IP of the central server (if any) if this Pi is a follower
+    REVERB_APP_KEY=some_random_key # Match your main .env
     ```
-4.  **Configure `pi_client.py` (on the Pi):**
-    *   Set the `MACHINE_ID` in `pi_client.py` to match the `MACHINE_ID` set in the Pi's Laravel `.env`. This tells the Python script which machine *it is*. (This can also be set via environment variable on the Pi for robustness).
-    *   Set `LARAVEL_HOST` to `127.0.0.1:8000` if the Laravel app is running *on the same Raspberry Pi*. If it's connecting to a remote leader, use the `LEADER_HOST` value.
-5.  **Run `pi_client.py`:**
+    *Note: The `pi_client.py` script will read from the main project's `.env` when run from `clients/python/`. If you move it to a Pi, ensure the Pi's environment variables or local `.env` provide the necessary `MACHINE_ID`, `LEADER_HOST`, and `REVERB_APP_KEY`.*
+4.  **Run `pi_client.py`:**
     ```bash
     python clients/python/pi_client.py
     ```
+    *(When running this from your project root, it will load the `../../.env` file for config)*
 
 ### Key aspects of the Python Script:
 
@@ -87,4 +87,4 @@ This script is the heart of your physical machine (RC car). It runs on the Raspb
 1.  **Configure:** Change the `.env` on your local development machine to `APP_MODE=MACHINE` and set `MACHINE_ID` to an existing machine (e.g., `1`).
 2.  **Start Laravel & Reverb:** `php artisan serve` and `php artisan reverb:start` (locally).
 3.  **Run the Python client:** `python clients/python/pi_client.py` (locally, in a third terminal, ensuring `MACHINE_ID` and `LARAVEL_HOST` are set correctly in the Python script itself).
-4.  **Open the Display:** Go to `http://127.0.0.1:8000/display` in your browser. You should see the single machine's card updating.
+4.  **Open the Display:** Go to `http://172.0.0.1:8000/display` in your browser. You should see the single machine's card updating.

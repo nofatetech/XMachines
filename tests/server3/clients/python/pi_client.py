@@ -7,18 +7,22 @@ import random
 import os
 import csv
 from datetime import datetime
+from dotenv import load_dotenv
 
 # --- CONFIGURATION ---
-# IMPORTANT: These should be set as environment variables on the Raspberry Pi
-# For testing, you can uncomment and set them here.
-# os.environ['MACHINE_ID'] = '1'
-# os.environ['LARAVEL_HOST'] = '127.0.0.1:8000' # Use `localhost:8000` if Laravel is on the same Pi
+# Load environment variables from the main Laravel project's .env file
+# This assumes pi_client.py is run from within the clients/python/ directory
+# For deployment on a Raspberry Pi, set these as actual environment variables
+# on the Pi or provide a local .env file on the Pi.
+load_dotenv(dotenv_path='../../.env')
 
 MACHINE_ID = int(os.getenv('MACHINE_ID', '1'))  # Default to 1 if not set
-LARAVEL_HOST = os.getenv('LARAVEL_HOST', "127.0.0.1:8000")
+# If APP_MODE is MACHINE, it connects to itself. If SERVER, it connects to the leader.
+LARAVEL_HOST = os.getenv('LEADER_HOST') if os.getenv('APP_MODE') == 'MACHINE' else os.getenv('APP_URL').replace('http://', '')
+if not LARAVEL_HOST: # Fallback if LEADER_HOST or APP_URL not perfectly set for Pi
+    LARAVEL_HOST = "127.0.0.1:8000" # Default for local testing
 
-# These details come from your .env file and Reverb config
-REVERB_APP_KEY = os.getenv('REVERB_APP_KEY', "some_random_key") # REVERB_APP_KEY from .env
+REVERB_APP_KEY = os.getenv('REVERB_APP_KEY', "some_random_key")
 WS_URL = f"ws://{LARAVEL_HOST}/app/{REVERB_APP_KEY}"
 
 DATA_LOG_FILE = f"machine_{MACHINE_ID}_training_data.csv"
