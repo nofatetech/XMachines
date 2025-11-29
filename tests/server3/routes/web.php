@@ -1,7 +1,6 @@
 <?php
 
 use App\Events\MachineControlSent;
-use App\Http\Controllers\Api\MachineStatusController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Machine;
 use App\Events\MachineStatusUpdated;
@@ -67,7 +66,5 @@ Route::get('/machine-update', function () {
     return response()->json(['status' => 'Machine status updated and event dispatched!', 'machine' => $machine]);
 });
 
-// API route for machine status updates (unauthenticated for now)
-Route::post('/api/machine/{machine}/status', [MachineStatusController::class, 'update'])->name('api.machine.status');
 
 require __DIR__.'/auth.php';
