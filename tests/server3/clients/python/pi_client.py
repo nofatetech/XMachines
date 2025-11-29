@@ -10,6 +10,17 @@ from datetime import datetime
 from dotenv import load_dotenv
 import ollama # New import
 from collections import deque # New import
+import socket
+
+# Attempt to import OLED libraries
+try:
+    from luma.core.interface.serial import i2c
+    from luma.core.render import canvas
+    from luma.oled.device import ssd1306
+    LUMA_OLED_AVAILABLE = True
+except ImportError:
+    LUMA_OLED_AVAILABLE = False
+
 
 # --- CONFIGURATION ---
 load_dotenv(dotenv_path='../../.env')
@@ -27,6 +38,10 @@ OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', "phi3") # New: Default LLM model
 
 DATA_LOG_FILE = f"machine_{MACHINE_ID}_training_data.csv"
 
+# --- NEW: Thread-safe state management ---
+state_lock = threading.Lock()
+last_received_command = "None"
+
 # Global variable to hold machine state received from API response
 current_machine_state = {
     'is_auto_driving': False,
@@ -38,6 +53,54 @@ current_machine_state = {
     'lights_on': False,
     'fog_lights_on': False,
 }
+
+# --- NEW: Function to get local IP for display ---
+def get_ip_address():
+    """Tries to get the local IP address. Returns 'N/A' on failure."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80)) # Connect to a public DNS server
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "N/A"
+
+# --- NEW: OLED Display Management Thread ---
+def manage_oled_display():
+    """Manages the OLED display in a separate thread."""
+    if not LUMA_OLED_AVAILABLE:
+        return # Exit if library is not installed
+
+    try:
+        # Initialize the OLED device (assuming I2C on port 1, address 0x3C)
+        serial = i2c(port=1, address=0x3C)
+        device = ssd1306(serial)
+    except Exception as e:
+        print(f"[OLED] Could not initialize display: {e}. Is it connected correctly?")
+        return
+
+    ip_address = get_ip_address() # Get IP once at the start
+
+    while True:
+        # Safely copy the state and last command to avoid holding the lock for too long
+        with state_lock:
+            state_copy = current_machine_state.copy()
+            last_cmd = last_received_command
+
+        with canvas(device) as draw:
+            # Line 1: Machine ID and Status
+            draw.text((0, 0), f"Machine #{MACHINE_ID} - Online", fill="white")
+            # Line 2: IP Address
+            draw.text((0, 10), f"IP: {ip_address}", fill="white")
+            # Line 3: Tamagotchi Stats
+            hap = state_copy.get('happiness', '--')
+            hun = state_copy.get('hunger', '--')
+            draw.text((0, 20), f"HAP: {hap}  HUN: {hun}", fill="white")
+            # Line 4: Last Command Received
+            draw.text((0, 32), f"CMD: {last_cmd}", fill="white")
+
+        time.sleep(1) # Refresh the screen every second
 
 # --- GPIO Placeholder (Replace with actual RPi.GPIO or pigpio calls) ---
 def set_motor_speed(motor, speed):
@@ -123,14 +186,20 @@ Respond concisely and focus on facts from your logs or current state if applicab
 # --- WebSocket App for Command Listening ---
 def on_message(ws, message):
     """Called when a new message is received from the server."""
+    global last_received_command
     data = json.loads(message)
     event_name = data.get('event')
-    event_payload = json.loads(data.get('data', '{}')) 
+    event_payload = json.loads(data.get('data', '{}'))
     
     print(f"---|> Received event: {event_name}, Payload: {event_payload}")
 
     if event_name == 'machine.control-sent':
         command = event_payload.get('command')
+        
+        # NEW: Safely update the last received command for the OLED display
+        with state_lock:
+            last_received_command = command
+            
         print(f"---|> Processing command: {command}")
         # --- ADD YOUR GPIO LOGIC HERE ---
         if command == 'toggle_lights':
@@ -140,8 +209,9 @@ def on_message(ws, message):
         elif command == 'toggle_auto_driving':
             # This command will primarily update the DB. We update current_machine_state
             # to reflect this. The Pi will react via its next heartbeat.
-            current_machine_state['is_auto_driving'] = not current_machine_state['is_auto_driving']
-            print(f"Auto driving toggled to {current_machine_state['is_auto_driving']}. Pi will react on next status update response.")
+            with state_lock:
+                current_machine_state['is_auto_driving'] = not current_machine_state.get('is_auto_driving', False)
+            print(f"Auto driving toggled. Pi will react on next status update response.")
         elif command == 'feed':
             print("Machine fed!") # Pi doesn't do much here, server updates hunger
         elif command == 'play':
@@ -221,10 +291,16 @@ def send_status_heartbeat():
             # This includes Tamagotchi fields and auto_driving status.
             if 'machine' in response_data:
                 global current_machine_state
-                current_machine_state.update(response_data['machine'])
+                # NEW: Use lock for thread-safe update
+                with state_lock:
+                    current_machine_state.update(response_data['machine'])
             
             # --- AUTO-DRIVING LOGIC (placeholder) ---
-            if current_machine_state['is_auto_driving']:
+            # NEW: Safely read state for auto-driving logic
+            with state_lock:
+                is_auto_driving = current_machine_state.get('is_auto_driving', False)
+
+            if is_auto_driving:
                 print("[AUTO-DRIVE] Machine is in auto-driving mode.")
                 # Implement your auto-driving logic here based on sensor data
                 # Example: current_machine_state has all data including happiness, hunger
@@ -240,8 +316,10 @@ def send_status_heartbeat():
                 # If not auto-driving, ensure motors are off unless controlled manually
                 set_motor_speed('left', 0)
                 set_motor_speed('right', 0)
-
-            log_data(current_machine_state) # Log the full, updated state
+            
+            with state_lock:
+                state_to_log = current_machine_state.copy()
+            log_data(state_to_log) # Log the full, updated state
 
         except requests.exceptions.ConnectionError as e:
             print(f"Network connection error: {e}. Retrying in 5 seconds...")
@@ -256,6 +334,14 @@ def send_status_heartbeat():
 # --- Main Execution ---
 if __name__ == "__main__":
     setup_data_logger()
+
+    # Start the OLED display thread if the library is available
+    if LUMA_OLED_AVAILABLE:
+        oled_thread = threading.Thread(target=manage_oled_display, daemon=True)
+        oled_thread.start()
+        print("[OLED] Display thread started.")
+    else:
+        print("[OLED] luma.oled library not found. Skipping display. Install with: pip install luma.oled")
 
     # Start the WebSocket listener in a background thread
     ws_thread = threading.Thread(target=run_websocket_listener, daemon=True)
