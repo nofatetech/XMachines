@@ -8,36 +8,44 @@ import os
 import csv
 from datetime import datetime
 from dotenv import load_dotenv
+import ollama # New import
+from collections import deque # New import
 
 # --- CONFIGURATION ---
-# Load environment variables from the main Laravel project's .env file
-# This assumes pi_client.py is run from within the clients/python/ directory
-# For deployment on a Raspberry Pi, set these as actual environment variables
-# on the Pi or provide a local .env file on the Pi.
 load_dotenv(dotenv_path='../../.env')
 
-MACHINE_ID = int(os.getenv('MACHINE_ID', '1'))  # Default to 1 if not set
-# If APP_MODE is MACHINE, it connects to itself. If SERVER, it connects to the leader.
+MACHINE_ID = int(os.getenv('MACHINE_ID', '1'))
 LARAVEL_HOST = os.getenv('LEADER_HOST') if os.getenv('APP_MODE') == 'MACHINE' else os.getenv('APP_URL').replace('http://', '')
-if not LARAVEL_HOST: # Fallback if LEADER_HOST or APP_URL not perfectly set for Pi
-    LARAVEL_HOST = "127.0.0.1:8000" # Default for local testing
+if not LARAVEL_HOST:
+    LARAVEL_HOST = "127.0.0.1:8000"
 
 REVERB_APP_KEY = os.getenv('REVERB_APP_KEY', "some_random_key")
 WS_URL = f"ws://{LARAVEL_HOST}/app/{REVERB_APP_KEY}"
 
+OLLAMA_HOST = os.getenv('OLLAMA_HOST', "http://localhost:11434") # New: Ollama server address
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', "phi3") # New: Default LLM model
+
 DATA_LOG_FILE = f"machine_{MACHINE_ID}_training_data.csv"
 
-# Global variable to hold machine state received from dashboard (e.g., is_auto_driving)
-# This is a simplified approach; a more robust solution might use a local database.
-current_machine_state = {'is_auto_driving': False}
+# Global variable to hold machine state received from API response
+current_machine_state = {
+    'is_auto_driving': False,
+    'happiness': 50,
+    'hunger': 0,
+    'temperature': 0,
+    'motor_left_speed': 0,
+    'motor_right_speed': 0,
+    'lights_on': False,
+    'fog_lights_on': False,
+}
 
 # --- GPIO Placeholder (Replace with actual RPi.GPIO or pigpio calls) ---
 def set_motor_speed(motor, speed):
-    # print(f"[GPIO] Setting {motor} speed to {speed}%")
+    print(f"[GPIO] Setting {motor} speed to {speed}%") # Uncomment for debugging
     pass
 
 def toggle_light(light_type):
-    # print(f"[GPIO] Toggling {light_type} lights")
+    print(f"[GPIO] Toggling {light_type} lights") # Uncomment for debugging
     pass
 
 # --- Data Logging --- #
@@ -48,31 +56,75 @@ def setup_data_logger():
             writer.writerow([
                 'timestamp', 'temperature', 'motor_left_speed', 'motor_right_speed',
                 'lights_on', 'fog_lights_on', 'happiness', 'hunger', 'is_auto_driving',
-                'command_received' # The command that triggered this state (if any)
+                'command_received'
             ])
 
-def log_data(payload, command_received=None):
+def log_data(machine_data, command_received=None):
+    """Logs the full machine state (from API response) and command to CSV."""
     with open(DATA_LOG_FILE, 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([
             datetime.now().isoformat(),
-            payload.get('temperature'),
-            payload.get('motor_left_speed'),
-            payload.get('motor_right_speed'),
-            payload.get('lights_on'),
-            payload.get('fog_lights_on'),
-            payload.get('happiness'), # These will be updated from DB response if sent to API
-            payload.get('hunger'),    # or from local simulation in machine:life-cycle
-            payload.get('is_auto_driving'),
+            machine_data.get('temperature'),
+            machine_data.get('motor_left_speed'),
+            machine_data.get('motor_right_speed'),
+            machine_data.get('lights_on'),
+            machine_data.get('fog_lights_on'),
+            machine_data.get('happiness'),
+            machine_data.get('hunger'),
+            machine_data.get('is_auto_driving'),
             command_received
         ])
+
+# --- RAG and LLM Integration ---
+def read_recent_logs(num_lines=50):
+    """Reads the last N lines from the data log file to use as context."""
+    if not os.path.exists(DATA_LOG_FILE):
+        return "No recent log data available."
+    
+    with open(DATA_LOG_FILE, 'r') as f:
+        # Use deque to efficiently get the last N lines
+        lines = deque(f, num_lines + 1) # +1 for header
+    
+    # Exclude header if present
+    if len(lines) > 0 and 'timestamp' in lines[0]:
+        lines.popleft()
+
+    if not lines:
+        return "No recent log data available."
+    
+    return "\n".join(lines)
+
+def ask_brain(question: str):
+    """Queries the local LLM (Ollama) with RAG context from recent logs."""
+    print(f"[LLM] Asking brain: {question}")
+    recent_logs = read_recent_logs()
+    
+    prompt = f"""You are the AI mind of Machine #{MACHINE_ID}. 
+Your current state is: {json.dumps(current_machine_state, indent=2)}
+Here is a log of your most recent actions and sensor readings:
+```csv
+{recent_logs}
+```
+Based on this context and your current state, answer the following question: '{question}'
+Respond concisely and focus on facts from your logs or current state if applicable.
+"""
+    try:
+        response = ollama.chat(model=OLLAMA_MODEL, messages=[
+            {'role': 'user', 'content': prompt}
+        ])
+        llm_response = response['message']['content']
+        print(f"[LLM] Brain response: {llm_response}")
+        return llm_response
+    except Exception as e:
+        print(f"[LLM] Error communicating with Ollama: {e}")
+        return f"Error: Could not connect to brain ({e})"
 
 # --- WebSocket App for Command Listening ---
 def on_message(ws, message):
     """Called when a new message is received from the server."""
     data = json.loads(message)
     event_name = data.get('event')
-    # The actual data is a stringified JSON within the 'data' field
     event_payload = json.loads(data.get('data', '{}')) 
     
     print(f"---|> Received event: {event_name}, Payload: {event_payload}")
@@ -86,12 +138,20 @@ def on_message(ws, message):
         elif command == 'toggle_fog_lights':
             toggle_light('fog')
         elif command == 'toggle_auto_driving':
-            # This command will primarily update the DB, the Pi will react via the next heartbeat
-            print("Auto driving toggled. Pi will react on next status update response.")
+            # This command will primarily update the DB. We update current_machine_state
+            # to reflect this. The Pi will react via its next heartbeat.
+            current_machine_state['is_auto_driving'] = not current_machine_state['is_auto_driving']
+            print(f"Auto driving toggled to {current_machine_state['is_auto_driving']}. Pi will react on next status update response.")
         elif command == 'feed':
             print("Machine fed!") # Pi doesn't do much here, server updates hunger
         elif command == 'play':
             print("Machine played with!") # Pi doesn't do much here, server updates happiness
+        elif command == 'ask_llm': # New command to query the LLM
+            question = event_payload.get('question', 'What is my current status?')
+            llm_response = ask_brain(question)
+            # In a real scenario, you might send this response back to the server
+            # or display it locally on the Pi's screen.
+            print(f"[LLM Response for '{question}'] {llm_response}")
         # ... other control commands
 
 def on_error(ws, error):
@@ -117,7 +177,6 @@ def on_open(ws):
 
 def run_websocket_listener():
     """Sets up and runs the WebSocket listener."""
-    # Continually try to reconnect
     while True:
         try:
             ws = websocket.WebSocketApp(WS_URL,
@@ -138,7 +197,6 @@ def send_status_heartbeat():
     while True:
         try:
             # --- GATHER YOUR SENSOR DATA HERE ---
-            # Replace with actual sensor readings from GPIO
             current_temperature = round(random.uniform(20.0, 40.0), 2)
             current_motor_left_speed = random.randint(0, 100)
             current_motor_right_speed = random.randint(0, 100)
@@ -151,7 +209,6 @@ def send_status_heartbeat():
                 "motor_right_speed": current_motor_right_speed,
                 "lights_on": current_lights_on,
                 "fog_lights_on": current_fog_lights_on,
-                # No need to send happiness/hunger/auto_driving from client, server handles these
             }
             
             response = requests.post(status_url, json=payload, timeout=5)
@@ -160,27 +217,31 @@ def send_status_heartbeat():
             response_data = response.json()
             print(f"<--- Sent status heartbeat. Response: {response.status_code}")
             
-            # Update local state based on server's response (e.g., if auto_driving was toggled)
-            # In a more complex system, the server might send the full machine state back.
-            # For now, we assume the server's DB is the source of truth for these.
-            # A dedicated 'machine.status-updated' event would be ideal here if Pi was listening to it
+            # IMPORTANT: Update the global current_machine_state with the FULL state from the server
+            # This includes Tamagotchi fields and auto_driving status.
+            if 'machine' in response_data:
+                global current_machine_state
+                current_machine_state.update(response_data['machine'])
             
             # --- AUTO-DRIVING LOGIC (placeholder) ---
             if current_machine_state['is_auto_driving']:
                 print("[AUTO-DRIVE] Machine is in auto-driving mode.")
                 # Implement your auto-driving logic here based on sensor data
-                # For example:
-                # if current_temperature > 35: 
-                #     set_motor_speed('left', 0) # Stop if too hot
+                # Example: current_machine_state has all data including happiness, hunger
+                # if current_machine_state['hunger'] > 70:
+                #     print("[AUTO-DRIVE] Feeling hungry, looking for food...")
+                #     set_motor_speed('left', 20)
+                #     set_motor_speed('right', 20)
                 # else:
-                #     set_motor_speed('left', 50)
+                #     set_motor_speed('left', 0)
+                #     set_motor_speed('right', 0)
                 pass
             else:
                 # If not auto-driving, ensure motors are off unless controlled manually
                 set_motor_speed('left', 0)
                 set_motor_speed('right', 0)
 
-            log_data(payload)
+            log_data(current_machine_state) # Log the full, updated state
 
         except requests.exceptions.ConnectionError as e:
             print(f"Network connection error: {e}. Retrying in 5 seconds...")
@@ -202,5 +263,4 @@ if __name__ == "__main__":
 
     # Start the status heartbeat in the main thread
     send_status_heartbeat()
-
 ```

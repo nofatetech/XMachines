@@ -116,5 +116,45 @@ if (typeof window.xMachines !== 'undefined') {
                 });
             });
         });
+
+        // Add event listeners for LLM query buttons
+        document.querySelectorAll('.send-llm-query-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const machineId = this.dataset.machineId;
+                const questionInput = document.getElementById(`llm_question_input_${machineId}`);
+                const question = questionInput.value;
+                const loadingSpinner = document.querySelector(`.llm-loading-spinner_${machineId}`);
+                const responseDisplay = document.querySelector(`.llm-response-display_${machineId}`);
+
+                if (!question) {
+                    alert('Please enter a question.');
+                    return;
+                }
+
+                // Show loading spinner
+                loadingSpinner.classList.remove('hidden');
+                responseDisplay.classList.add('hidden');
+
+                console.log(`Sending LLM query to machine ${machineId}: ${question}`);
+
+                axios.post(`/machine/${machineId}/control`, {
+                    command: 'ask_llm',
+                    question: question
+                }).then(response => {
+                    console.log('LLM query sent successfully:', response.data);
+                    // Hide loading spinner
+                    loadingSpinner.classList.add('hidden');
+                    responseDisplay.classList.remove('hidden');
+                    // Indicate that the response will be in the Pi's terminal
+                    responseDisplay.innerHTML = '<p>Response will appear in the Pi\'s terminal.</p>';
+                }).catch(error => {
+                    console.error('Error sending LLM query:', error);
+                    // Hide loading spinner and show error
+                    loadingSpinner.classList.add('hidden');
+                    responseDisplay.classList.remove('hidden');
+                    responseDisplay.innerHTML = `<p class="text-error">Error: ${error.message}</p>`;
+                });
+            });
+        });
     });
 }

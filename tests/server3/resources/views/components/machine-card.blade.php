@@ -23,7 +23,30 @@
                 <button class="btn btn-info btn-sm control-btn" data-machine-id="{{ $machine->id }}" data-command="toggle_auto_driving">Toggle Auto Drive</button>
                 <button class="btn btn-success btn-sm control-btn" data-machine-id="{{ $machine->id }}" data-command="feed">Feed</button>
                 <button class="btn btn-warning btn-sm control-btn" data-machine-id="{{ $machine->id }}" data-command="play">Play</button>
+                <button class="btn btn-ghost btn-sm ask-llm-btn" data-machine-id="{{ $machine->id }}" onclick="document.getElementById('llm_modal_{{ $machine->id }}').showModal()">Ask LLM</button>
             </div>
+
+            <!-- LLM Modal -->
+            <dialog id="llm_modal_{{ $machine->id }}" class="modal">
+                <div class="modal-box">
+                    <h3 class="font-bold text-lg">Ask Machine {{ $machine->name }} (ID: {{ $machine->id }})</h3>
+                    <p class="py-4">Enter your question for the machine's local LLM:</p>
+                    <input type="text" placeholder="e.g., What is my current temperature?" class="input input-bordered w-full mb-4" id="llm_question_input_{{ $machine->id }}" />
+                    <div class="llm-loading-spinner_{{ $machine->id }} hidden text-center mb-4">
+                        <span class="loading loading-spinner loading-lg"></span>
+                        <p>Machine {{ $machine->name }} is thinking...</p>
+                    </div>
+                    <div class="llm-response-display_{{ $machine->id }} hidden border rounded-md p-2 bg-base-200 text-sm overflow-auto max-h-40">
+                        <p>Response will appear in the Pi's terminal.</p>
+                    </div>
+                    <div class="modal-action">
+                        <button class="btn btn-primary send-llm-query-btn" data-machine-id="{{ $machine->id }}">Ask</button>
+                        <form method="dialog">
+                            <button class="btn">Close</button>
+                        </form>
+                    </div>
+                </div>
+            </dialog>
         @endisset
     </div>
 </div>
