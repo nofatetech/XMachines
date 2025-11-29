@@ -9,19 +9,18 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    {{ __("You're logged in!") }}
+                    <div class="flex" style="height: 60vh;">
+                        <!-- Main 3D Scene -->
+                        <div id="scene-container" class="flex-grow bg-gray-900 rounded-lg mr-4">
+                            <!-- Three.js canvas will be injected here -->
+                        </div>
 
-                    <div class="mt-4">
-                        <p>WebSocket Server: <span id="websocket-server">localhost:8080</span></p>
-                        <p>WebSocket Status: <span id="websocket-status" class="font-bold">Connecting...</span></p>
-                    </div>
-
-                    <div class="mt-6">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Connected Machines:</h3>
-                        <div id="machines-grid" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            @foreach($machines as $machine)
-                                <x-machine-card :machine="$machine" :showControls="true" />
-                            @endforeach
+                        <!-- Sidebar for Machine Details -->
+                        <div id="machine-details-sidebar" class="w-1/3 bg-gray-700 p-4 rounded-lg hidden">
+                            <h3 id="sidebar-title" class="text-lg font-bold text-white mb-4">Select a Machine</h3>
+                            <div id="sidebar-content" class="text-white">
+                                <!-- Machine details will be populated here -->
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -17,6 +17,10 @@
             <p>Auto-Driving: <span id="auto-driving-{{ $machine->id }}">{{ $machine->is_auto_driving ? 'On' : 'Off' }}</span></p>
         </div>
 
+        <!-- NEW: Imagination Frame -->
+        <div id="imagination-frame-{{ $machine->id }}" class="imagination-frame w-full h-32 bg-base-200 mt-4 rounded flex items-center justify-center">
+        </div>
+
         <!-- NEW: Mind State Panel -->
         <div class="mt-4 pt-4 border-t border-base-300">
             <h3 class="text-xs uppercase font-bold text-gray-400 mb-2">Mind State</h3>
@@ -35,10 +39,6 @@
                     <p id="last-thought-1-{{ $machine->id }}" class="text-sm italic">"Awaiting input..."</p>
                     <p id="last-thought-2-{{ $machine->id }}" class="text-sm italic text-gray-400">"..."</p>
                     <p id="last-thought-3-{{ $machine->id }}" class="text-sm italic text-gray-400">"..."</p>
-                    <!-- Imagination Frame (Placeholder) -->
-                    <div id="imagination-frame-{{ $machine->id }}" class="w-full h-24 bg-base-200 mt-2 rounded flex items-center justify-center hidden">
-                         <span class="text-xs text-gray-500">Imagination will appear here.</span>
-                    </div>
                 </div>
             </div>
         </div>

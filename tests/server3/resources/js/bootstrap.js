@@ -3,14 +3,9 @@ window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-with'] = 'XMLHttpRequest';
 
-/**
- * Echo exposes an expressive API for subscribing to channels and listening
- * for events that are broadcast by Laravel. Echo and event broadcasting
- * allow your team to quickly build robust real-time web applications.
- */
-
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import SharedScene from './machine-3d.js'; // Updated import
 
 window.Pusher = Pusher;
 
@@ -24,137 +19,74 @@ window.Echo = new Echo({
     enabledTransports: ['ws', 'wss'],
 });
 
-// --- Dashboard Specific Logic ---
-// This will only run on pages that have defined `window.xMachines`
 if (typeof window.xMachines !== 'undefined') {
     document.addEventListener('DOMContentLoaded', function() {
-        const wsStatus = document.getElementById('websocket-status');
-        console.log('DOM Content Loaded. Echo instance:', window.Echo);
+        const sceneContainer = document.getElementById('scene-container');
+        if (!sceneContainer) return;
 
-        console.log('Binding to state_change event...');
-        window.Echo.connector.pusher.connection.bind('state_change', function(states) {
-            console.log('WebSocket state changed:', states);
-            if (wsStatus) {
-                wsStatus.textContent = states.current;
-                if (states.current === 'connected') {
-                    wsStatus.classList.remove('text-red-500', 'text-yellow-500');
-                    wsStatus.classList.add('text-green-500');
-                } else if (states.current === 'connecting') {
-                    wsStatus.classList.remove('text-green-500', 'text-red-500');
-                    wsStatus.classList.add('text-yellow-500');
-                } else {
-                    wsStatus.classList.remove('text-green-500', 'text-yellow-500');
-                    wsStatus.classList.add('text-red-500');
-                }
+        const sharedScene = new SharedScene(sceneContainer);
+        sharedScene.populateScene(window.xMachines);
+
+        const machines = window.xMachines;
+
+        machines.forEach(machine => {
+            window.Echo.channel(`machine.${machine.id}.status`)
+                .listen('.machine.status-updated', (e) => {
+                    console.log(`Received status update for machine ${e.machine.id}`, e.machine);
+                    sharedScene.updateMachineState(e.machine);
+                    // Also update sidebar if this machine is selected
+                    const sidebar = document.getElementById('machine-details-sidebar');
+                    if (!sidebar.classList.contains('hidden') && sidebar.dataset.machineId == e.machine.id) {
+                        updateSidebar(e.machine);
+                    }
+                });
+        });
+
+        // Handle machine selection from 3D scene
+        window.addEventListener('machine-selected', (event) => {
+            const machineId = event.detail.id;
+            const machineData = machines.find(m => m.id == machineId);
+            if (machineData) {
+                updateSidebar(machineData);
             }
         });
 
-        const machines = window.xMachines;
-        const lastMachineUpdate = {};
+        // Function to update the sidebar
+        function updateSidebar(machine) {
+            const sidebar = document.getElementById('machine-details-sidebar');
+            const title = document.getElementById('sidebar-title');
+            const content = document.getElementById('sidebar-content');
 
-        machines.forEach(machine => {
-            // Initialize last update time for each machine
-            lastMachineUpdate[machine.id] = Date.now();
+            sidebar.dataset.machineId = machine.id;
+            title.textContent = machine.name;
 
-            window.Echo.channel(`machine.${machine.id}.status`)
-                .listen('.machine.status-updated', (e) => {
-                    console.log(`Received machine.status-updated event for machine ${machine.id}:`, e);
-                    const machineId = e.machine.id;
-                    const machineCard = document.getElementById(`machine-${machineId}`);
-                    if (machineCard) {
-                        // Update last update time
-                        lastMachineUpdate[machineId] = Date.now();
+            // Build the sidebar content
+            content.innerHTML = `
+                <p><strong>Status:</strong> <span class="badge ${machine.is_online ? 'badge-success' : 'badge-error'}">${machine.is_online ? 'Online' : 'Offline'}</span></p>
+                <p><strong>Temperature:</strong> ${machine.temperature}°C</p>
+                <p><strong>Happiness:</strong> ${machine.happiness}</p>
+                <p><strong>Hunger:</strong> ${machine.hunger}</p>
+                <p><strong>L Motor:</strong> ${machine.motor_left_speed}%</p>
+                <p><strong>R Motor:</strong> ${machine.motor_right_speed}%</p>
+                <div class="card-actions justify-end mt-4">
+                    <button class="btn btn-primary btn-sm control-btn" data-machine-id="${machine.id}" data-command="toggle_lights">Toggle Lights</button>
+                    <button class="btn btn-secondary btn-sm control-btn" data-machine-id="${machine.id}" data-command="toggle_fog_lights">Toggle Fog</button>
+                    <button class="btn btn-info btn-sm control-btn" data-machine-id="${machine.id}" data-command="toggle_auto_driving">Toggle Auto Drive</button>
+                </div>
+            `;
 
-                        const statusBadge = document.getElementById(`status-${machineId}`);
-                        statusBadge.textContent = e.machine.is_online ? 'Online' : 'Offline';
-                        statusBadge.className = `badge ${e.machine.is_online ? 'badge-success' : 'badge-error'}`;
-
-                        document.getElementById(`temp-${machineId}`).textContent = e.machine.temperature;
-                        document.getElementById(`motor-left-${machineId}`).textContent = e.machine.motor_left_speed;
-                        document.getElementById(`motor-right-${machineId}`).textContent = e.machine.motor_right_speed;
-                        document.getElementById(`lights-${machineId}`).textContent = e.machine.lights_on ? 'On' : 'Off';
-                        document.getElementById(`fog-lights-${machineId}`).textContent = e.machine.fog_lights_on ? 'On' : 'Off';
-                        
-                        // Update new Tamagotchi fields
-                        document.getElementById(`happiness-${machineId}`).textContent = e.machine.happiness;
-                        document.getElementById(`hunger-${machineId}`).textContent = e.machine.hunger;
-                        document.getElementById(`auto-driving-${machineId}`).textContent = e.machine.is_auto_driving ? 'On' : 'Off';
-                    }
-                });
-        });
-
-        // Client-side timeout check
-        setInterval(() => {
-            const fiveSecondsAgo = Date.now() - 5000;
-            machines.forEach(machine => {
-                const machineId = machine.id;
-                const statusBadge = document.getElementById(`status-${machineId}`);
-                if (statusBadge && lastMachineUpdate[machineId] < fiveSecondsAgo) {
-                    if (statusBadge.textContent !== 'Offline') {
-                        console.log(`Machine ${machineId} timed out. Setting to Offline.`);
-                        statusBadge.textContent = 'Offline';
-                        statusBadge.className = 'badge badge-error';
-                    }
-                }
-            });
-        }, 1000); // Check every second
-
-        // Add event listeners for control buttons
-        document.querySelectorAll('.control-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const machineId = this.dataset.machineId;
-                const command = this.dataset.command;
-
-                console.log(`Sending command '${command}' to machine ${machineId}`);
-
-                axios.post(`/machine/${machineId}/control`, {
-                    command: command
-                }).then(response => {
-                    console.log('Control command sent successfully:', response.data);
-                }).catch(error => {
-                    console.error('Error sending control command:', error);
+            // Re-attach event listeners to new buttons
+            content.querySelectorAll('.control-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const machineId = this.dataset.machineId;
+                    const command = this.dataset.command;
+                    axios.post(`/machine/${machineId}/control`, { command: command })
+                        .catch(error => console.error('Error sending control command:', error));
                 });
             });
-        });
 
-        // Add event listeners for LLM query buttons
-        document.querySelectorAll('.send-llm-query-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const machineId = this.dataset.machineId;
-                const questionInput = document.getElementById(`llm_question_input_${machineId}`);
-                const question = questionInput.value;
-                const loadingSpinner = document.querySelector(`.llm-loading-spinner_${machineId}`);
-                const responseDisplay = document.querySelector(`.llm-response-display_${machineId}`);
 
-                if (!question) {
-                    alert('Please enter a question.');
-                    return;
-                }
-
-                // Show loading spinner
-                loadingSpinner.classList.remove('hidden');
-                responseDisplay.classList.add('hidden');
-
-                console.log(`Sending LLM query to machine ${machineId}: ${question}`);
-
-                axios.post(`/machine/${machineId}/control`, {
-                    command: 'ask_llm',
-                    question: question
-                }).then(response => {
-                    console.log('LLM query sent successfully:', response.data);
-                    // Hide loading spinner
-                    loadingSpinner.classList.add('hidden');
-                    responseDisplay.classList.remove('hidden');
-                    // Indicate that the response will be in the Pi's terminal
-                    responseDisplay.innerHTML = '<p>Response will appear in the Pi\'s terminal.</p>';
-                }).catch(error => {
-                    console.error('Error sending LLM query:', error);
-                    // Hide loading spinner and show error
-                    loadingSpinner.classList.add('hidden');
-                    responseDisplay.classList.remove('hidden');
-                    responseDisplay.innerHTML = `<p class="text-error">Error: ${error.message}</p>`;
-                });
-            });
-        });
+            sidebar.classList.remove('hidden');
+        }
     });
 }

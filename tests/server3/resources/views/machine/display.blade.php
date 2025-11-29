@@ -13,7 +13,7 @@
                     <p>Machine ID: {{ $machine->id }}</p>
                     <p>Local IP: {{ $localIp }}</p>
 
-                    <div class="mt-4">
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <x-machine-card :machine="$machine" :showControls="false" />
                     </div>
                 </div>
