@@ -6,12 +6,8 @@
 const char* WIFI_SSID     = "YourWiFiName";
 const char* WIFI_PASSWORD = "YourWiFiPass";
 
-// MQTT
-const char* MQTT_SERVER        = "192.168.0.13";
-const int   MQTT_PORT          = 1883;
-const char* MQTT_CLIENT_ID     = "vehicle_1";
-const char* MQTT_CONTROL_TOPIC = "vehicle/1/cmd";
-const char* MQTT_STATUS_TOPIC  = "vehicle/1/status";
+// WebSocket
+const char* WEBSOCKET_URL = "ws://192.168.0.13:81/";
 
 // Stepper motors (28BYJ-48 + ULN2003)
 #define STEPS_PER_REV   2048

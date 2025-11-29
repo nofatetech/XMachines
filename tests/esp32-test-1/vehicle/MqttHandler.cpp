@@ -1,3 +1,6 @@
+// This file is no longer in use.
+// The MQTT implementation has been replaced with a WebSocket-based approach.
+/*
 #include "MqttHandler.h"
 #include <WiFi.h>
 #include "config.h"
@@ -54,3 +57,4 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
 
   vehicleHandleJson(doc);
 }
+*/

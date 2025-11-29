@@ -2,11 +2,12 @@
 #define VEHICLE_CONTROL_H
 
 #include <ArduinoJson.h>
-#include <PubSubClient.h>
+
+class WebSocketsClient;
 
 void vehicleSetup();
 void vehicleLoop();
 void vehicleHandleJson(JsonDocument& doc);
-void vehiclePublishStatus(PubSubClient& client);
+void vehiclePublishStatus(WebSocketsClient& client);
 
 #endif

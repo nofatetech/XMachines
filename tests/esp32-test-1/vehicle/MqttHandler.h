@@ -1,3 +1,6 @@
+// This file is no longer in use.
+// The MQTT implementation has been replaced with a WebSocket-based approach.
+/*
 #ifndef MQTT_HANDLER_H
 #define MQTT_HANDLER_H
 
@@ -12,3 +15,4 @@ extern PubSubClient client;
 void onMqttMessage(char* topic, byte* payload, unsigned int length);
 
 #endif
+*/

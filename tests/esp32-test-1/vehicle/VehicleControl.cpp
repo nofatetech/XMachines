@@ -1,6 +1,7 @@
 #include "VehicleControl.h"
 #include "config.h"
 #include <AccelStepper.h>
+#include <WebSocketsClient.h>
 
 AccelStepper leftMotor(AccelStepper::FULL4WIRE, LEFT_IN1, LEFT_IN3, LEFT_IN2, LEFT_IN4);
 AccelStepper rightMotor(AccelStepper::FULL4WIRE, RIGHT_IN1, RIGHT_IN3, RIGHT_IN2, RIGHT_IN4);
@@ -60,7 +61,7 @@ void vehicleLoop() {
   updateBlinkers();
 }
 
-void vehiclePublishStatus(PubSubClient& client) {
+void vehiclePublishStatus(WebSocketsClient& client) {
   float batt = (analogRead(PIN_BATTERY) / 4095.0f) * VREF * DIVIDER_RATIO;
   JsonDocument doc;
   doc["left"] = leftSpeed;
@@ -69,6 +70,15 @@ void vehiclePublishStatus(PubSubClient& client) {
   doc["highbeam"] = highbeam;
   doc["fog"] = fog;
   doc["hazard"] = hazard;
-  String out; serializeJson(doc, out);
-  client.publish(MQTT_STATUS_TOPIC, out.c_str());
+  String out; 
+  serializeJson(doc, out);
+  
+  JsonDocument pubDoc;
+  pubDoc["action"] = "publish";
+  pubDoc["topic"] = "vehicle/1/status";
+  pubDoc["payload"] = out;
+  
+  String pubOut;
+  serializeJson(pubDoc, pubOut);
+  client.sendTXT(pubOut);
 }
