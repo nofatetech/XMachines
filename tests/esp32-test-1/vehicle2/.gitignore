@@ -1,0 +1,9 @@
+# Ignore credentials
+credentials.py
+
+# MicroPython build files
+build/
+dist/
+.micropython/
+*.pyc
+*.mpy
