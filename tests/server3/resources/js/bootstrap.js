@@ -5,7 +5,7 @@ window.axios.defaults.headers.common['X-Requested-with'] = 'XMLHttpRequest';
 
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
-import Machine3D from './machine-3d.js'; // Back to Machine3D
+import Machine3D from './machine-3d.js';
 
 window.Pusher = Pusher;
 
@@ -49,6 +49,11 @@ if (typeof window.xMachines !== 'undefined') {
                     document.getElementById(`temp-${machineId}`).textContent = e.machine.temperature;
                     document.getElementById(`motor-left-${machineId}`).textContent = e.machine.motor_left_speed;
                     document.getElementById(`motor-right-${machineId}`).textContent = e.machine.motor_right_speed;
+                    document.getElementById(`lights-${machineId}`).textContent = e.machine.lights_on ? 'On' : 'Off';
+                    document.getElementById(`fog-lights-${machineId}`).textContent = e.machine.fog_lights_on ? 'On' : 'Off';
+                    document.getElementById(`happiness-${machineId}`).textContent = e.machine.happiness;
+                    document.getElementById(`hunger-${machineId}`).textContent = e.machine.hunger;
+                    document.getElementById(`auto-driving-${machineId}`).textContent = e.machine.is_auto_driving ? 'On' : 'Off';
                 });
         });
 
@@ -59,6 +64,48 @@ if (typeof window.xMachines !== 'undefined') {
                 const command = this.dataset.command;
                 axios.post(`/machine/${machineId}/control`, { command: command })
                     .catch(error => console.error('Error sending control command:', error));
+            });
+        });
+
+        // Re-attach event listeners for LLM query buttons
+        document.querySelectorAll('.ask-llm-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const machineId = this.dataset.machineId;
+                const modal = document.getElementById(`llm_modal_${machineId}`);
+                if (modal) {
+                    modal.showModal();
+                }
+            });
+        });
+
+        document.querySelectorAll('.send-llm-query-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const machineId = this.dataset.machineId;
+                const questionInput = document.getElementById(`llm_question_input_${machineId}`);
+                const question = questionInput.value;
+                const loadingSpinner = document.querySelector(`.llm-loading-spinner_${machineId}`);
+                const responseDisplay = document.querySelector(`.llm-response-display_${machineId}`);
+
+                if (!question) {
+                    alert('Please enter a question.');
+                    return;
+                }
+
+                loadingSpinner.classList.remove('hidden');
+                responseDisplay.classList.add('hidden');
+
+                axios.post(`/machine/${machineId}/control`, {
+                    command: 'ask_llm',
+                    question: question
+                }).then(response => {
+                    loadingSpinner.classList.add('hidden');
+                    responseDisplay.classList.remove('hidden');
+                    responseDisplay.innerHTML = '<p>Response will appear in the Pi\'s terminal.</p>';
+                }).catch(error => {
+                    loadingSpinner.classList.add('hidden');
+                    responseDisplay.classList.remove('hidden');
+                    responseDisplay.innerHTML = `<p class="text-error">Error: ${error.message}</p>`;
+                });
             });
         });
     });

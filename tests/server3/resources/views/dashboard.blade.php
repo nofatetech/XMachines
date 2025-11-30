@@ -13,7 +13,7 @@
                         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Connected Machines:</h3>
                         <div id="machines-grid" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             @foreach($machines as $machine)
-                                <x-machine-card :machine="$machine" :showControls="true" />
+                                <x-machine-dashboard-card :machine="$machine" :showControls="true" />
                             @endforeach
                         </div>
                     </div>
