@@ -331,4 +331,3 @@ if __name__ == "__main__":
         print("\n--- Shutting down actors. ---")
         pykka.ActorRegistry.stop_all()
 
-```
