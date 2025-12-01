@@ -26,12 +26,18 @@ except ImportError:
 load_dotenv(dotenv_path='../../.env')
 
 MACHINE_ID = int(os.getenv('MACHINE_ID', '1'))
-LARAVEL_HOST = os.getenv('LEADER_HOST') if os.getenv('APP_MODE') == 'MACHINE' else os.getenv('APP_URL').replace('http://', '')
-if not LARAVEL_HOST:
-    LARAVEL_HOST = "127.0.0.1:8000"
+LEADER_HOST_WS = os.getenv('LEADER_HOST_WS') if os.getenv('APP_MODE') == 'MACHINE' else os.getenv('APP_URL').replace('http://', '')
+if not LEADER_HOST_WS:
+    LEADER_HOST_WS = "ws://127.0.0.1:8080"
+LEADER_HOST_WEB = os.getenv('LEADER_HOST_WEB') if os.getenv('APP_MODE') == 'MACHINE' else os.getenv('APP_URL').replace('http://', '')
+if not LEADER_HOST_WEB:
+    LEADER_HOST_WEB = "http://127.0.0.1:8000"
+
+
+
 
 REVERB_APP_KEY = os.getenv('REVERB_APP_KEY', "some_random_key")
-WS_URL = f"ws://{LARAVEL_HOST}/app/{REVERB_APP_KEY}"
+WS_URL = f"{LEADER_HOST_WS}/app/{REVERB_APP_KEY}"
 OLLAMA_HOST = os.getenv('OLLAMA_HOST', "http://localhost:11434")
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', "phi3")
 DATA_LOG_FILE = f"machine_{MACHINE_ID}_training_data.csv"
@@ -271,7 +277,7 @@ class HeartbeatActor(pykka.ThreadingActor):
             self.actor_ref.tell({'action': 'send_heartbeat'}, delay=2)
 
     def send_status(self):
-        status_url = f"http://{LARAVEL_HOST}/api/machine/{MACHINE_ID}/status"
+        status_url = f"{LEADER_HOST_WEB}/api/machine/{MACHINE_ID}/status"
         try:
             # --- GATHER SENSOR DATA HERE ---
             payload = {
