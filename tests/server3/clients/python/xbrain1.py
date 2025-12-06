@@ -174,7 +174,9 @@ WS_URL = f"{LEADER_HOST_WS.rstrip('/')}/machine/{MACHINE_ID}"
 ws = None
 
 def send_status():
+    print("send_status!")
     if not (ws and ws.sock and ws.sock.connected):
+        print("ws not connected!")
         return
     linear  = (brain.target_l + brain.target_r) / (2 * cfg.steps_per_meter)
     angular = (brain.target_r - brain.target_l) / (cfg.wheel_track * cfg.steps_per_meter)
