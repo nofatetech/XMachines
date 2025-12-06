@@ -6,6 +6,8 @@ window.axios.defaults.headers.common['X-Requested-with'] = 'XMLHttpRequest';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import Machine3D from './machine-3d.js';
+import $ from 'jquery';
+window.$ = window.jQuery = $;
 
 window.Pusher = Pusher;
 
@@ -20,15 +22,15 @@ window.Echo = new Echo({
 });
 
 if (typeof window.xMachines !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', function() {
+    $(function() {
         const machines = window.xMachines;
         const machine3dInstances = new Map();
 
         // Initialize a 3D scene for each machine card
         machines.forEach(machine => {
-            const container = document.getElementById(`imagination-frame-${machine.id}`);
-            if (container) {
-                const scene = new Machine3D(container);
+            const container = $(`#imagination-frame-${machine.id}`);
+            if (container.length) {
+                const scene = new Machine3D(container[0]);
                 machine3dInstances.set(machine.id, scene);
                 scene.updateState(machine); // Set initial state
             }
@@ -44,68 +46,62 @@ if (typeof window.xMachines !== 'undefined') {
                     }
                     // Also update the 2D stats in the card
                     const machineId = e.machine.id;
-                    document.getElementById(`status-${machineId}`).textContent = e.machine.is_online ? 'Online' : 'Offline';
-                    document.getElementById(`status-${machineId}`).className = `badge ${e.machine.is_online ? 'badge-success' : 'badge-error'}`;
-                    document.getElementById(`temp-${machineId}`).textContent = e.machine.temperature;
-                    document.getElementById(`motor-left-${machineId}`).textContent = e.machine.motor_left_speed;
-                    document.getElementById(`motor-right-${machineId}`).textContent = e.machine.motor_right_speed;
-                    document.getElementById(`lights-${machineId}`).textContent = e.machine.lights_on ? 'On' : 'Off';
-                    document.getElementById(`fog-lights-${machineId}`).textContent = e.machine.fog_lights_on ? 'On' : 'Off';
-                    document.getElementById(`happiness-${machineId}`).textContent = e.machine.happiness;
-                    document.getElementById(`hunger-${machineId}`).textContent = e.machine.hunger;
-                    document.getElementById(`auto-driving-${machineId}`).textContent = e.machine.is_auto_driving ? 'On' : 'Off';
+                    $(`#status-${machineId}`).text(e.machine.is_online ? 'Online' : 'Offline');
+                    $(`#status-${machineId}`).attr('class', `badge ${e.machine.is_online ? 'badge-success' : 'badge-error'}`);
+                    $(`#temp-${machineId}`).text(e.machine.temperature);
+                    $(`#motor-left-${machineId}`).text(e.machine.motor_left_speed);
+                    $(`#motor-right-${machineId}`).text(e.machine.motor_right_speed);
+                    $(`#lights-${machineId}`).text(e.machine.lights_on ? 'On' : 'Off');
+                    $(`#fog-lights-${machineId}`).text(e.machine.fog_lights_on ? 'On' : 'Off');
+                    $(`#happiness-${machineId}`).text(e.machine.happiness);
+                    $(`#hunger-${machineId}`).text(e.machine.hunger);
+                    $(`#auto-driving-${machineId}`).text(e.machine.is_auto_driving ? 'On' : 'Off');
                 });
         });
 
-        // Re-attach event listeners for control buttons
-        document.querySelectorAll('.control-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const machineId = this.dataset.machineId;
-                const command = this.dataset.command;
-                axios.post(`/machine/${machineId}/control`, { command: command })
-                    .catch(error => console.error('Error sending control command:', error));
-            });
+        // Use event delegation for control buttons
+        $(document).on('click', '.control-btn', function() {
+            const machineId = $(this).data('machine-id');
+            const command = $(this).data('command');
+            axios.post(`/machine/${machineId}/control`, { command: command })
+                .catch(error => console.error('Error sending control command:', error));
         });
 
-        // Re-attach event listeners for LLM query buttons
-        document.querySelectorAll('.ask-llm-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const machineId = this.dataset.machineId;
-                const modal = document.getElementById(`llm_modal_${machineId}`);
-                if (modal) {
-                    modal.showModal();
-                }
-            });
+        // Use event delegation for LLM query buttons
+        $(document).on('click', '.ask-llm-btn', function() {
+            const machineId = $(this).data('machine-id');
+            const modal = $(`#llm_modal_${machineId}`);
+            if (modal.length) {
+                modal[0].showModal();
+            }
         });
 
-        document.querySelectorAll('.send-llm-query-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const machineId = this.dataset.machineId;
-                const questionInput = document.getElementById(`llm_question_input_${machineId}`);
-                const question = questionInput.value;
-                const loadingSpinner = document.querySelector(`.llm-loading-spinner_${machineId}`);
-                const responseDisplay = document.querySelector(`.llm-response-display_${machineId}`);
+        $(document).on('click', '.send-llm-query-btn', function() {
+            const machineId = $(this).data('machine-id');
+            const questionInput = $(`#llm_question_input_${machineId}`);
+            const question = questionInput.val();
+            const loadingSpinner = $(`.llm-loading-spinner_${machineId}`);
+            const responseDisplay = $(`.llm-response-display_${machineId}`);
 
-                if (!question) {
-                    alert('Please enter a question.');
-                    return;
-                }
+            if (!question) {
+                alert('Please enter a question.');
+                return;
+            }
 
-                loadingSpinner.classList.remove('hidden');
-                responseDisplay.classList.add('hidden');
+            loadingSpinner.removeClass('hidden');
+            responseDisplay.addClass('hidden');
 
-                axios.post(`/machine/${machineId}/control`, {
-                    command: 'ask_llm',
-                    question: question
-                }).then(response => {
-                    loadingSpinner.classList.add('hidden');
-                    responseDisplay.classList.remove('hidden');
-                    responseDisplay.innerHTML = '<p>Response will appear in the Pi\'s terminal.</p>';
-                }).catch(error => {
-                    loadingSpinner.classList.add('hidden');
-                    responseDisplay.classList.remove('hidden');
-                    responseDisplay.innerHTML = `<p class="text-error">Error: ${error.message}</p>`;
-                });
+            axios.post(`/machine/${machineId}/control`, {
+                command: 'ask_llm',
+                question: question
+            }).then(response => {
+                loadingSpinner.addClass('hidden');
+                responseDisplay.removeClass('hidden');
+                responseDisplay.html('<p>Response will appear in the Pi\'s terminal.</p>');
+            }).catch(error => {
+                loadingSpinner.addClass('hidden');
+                responseDisplay.removeClass('hidden');
+                responseDisplay.html(`<p class="text-error">Error: ${error.message}</p>`);
             });
         });
     });

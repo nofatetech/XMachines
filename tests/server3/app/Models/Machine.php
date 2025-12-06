@@ -49,4 +49,12 @@ class Machine extends Model
         'hunger' => 'integer',
         'is_auto_driving' => 'boolean',
     ];
+
+    /**
+     * Get the nodes for the machine.
+     */
+    public function nodes()
+    {
+        return $this->hasMany(Node::class);
+    }
 }
