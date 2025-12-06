@@ -57,4 +57,12 @@ class Machine extends Model
     {
         return $this->hasMany(Node::class);
     }
+
+    /**
+     * Get the machine type for the machine.
+     */
+    public function machineType()
+    {
+        return $this->belongsTo(MachineType::class);
+    }
 }

@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt("123123"),
         ]);
 
-        Machine::factory(10)->create();
+        $this->call([
+            MachineTypeSeeder::class,
+            MachineSeeder::class,
+        ]);
     }
 }
