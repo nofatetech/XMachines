@@ -7,7 +7,10 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $data=[
+        'machines' => \App\Models\Machine::all(),
+    ];
+    return view('dashboard', $data);
 });
 
 Route::get('/machine_display', function () {

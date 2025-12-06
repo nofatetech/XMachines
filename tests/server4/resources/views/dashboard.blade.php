@@ -1,7 +1,7 @@
 @extends('layout')
 
 @section('title')
-    Home
+    Dashboard
 @endsection
 
 @section('content')
@@ -10,5 +10,11 @@
     <p>
         Go <a href="/">Home</a>.
     </p>
+
+    <div class="xxuk-flex">
+        @foreach ($machines as $machine)
+            @include('machine_card', ['machine' => $machine])
+        @endforeach
+    </div>
 
 @endsection
