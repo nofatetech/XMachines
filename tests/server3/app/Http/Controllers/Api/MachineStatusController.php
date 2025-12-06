@@ -14,6 +14,7 @@ class MachineStatusController extends Controller
      */
     public function update(Request $request, Machine $machine)
     {
+        Log::info("Received status update for machine ID {$machine->id}");
         $validated = $request->validate([
             'temperature' => 'sometimes|numeric',
             'motor_left_speed' => 'sometimes|integer|min:0|max:100',

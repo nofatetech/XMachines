@@ -185,7 +185,7 @@ CHANNEL_NAME = f"machine.{MACHINE_ID}.control"
 ws = None
 
 def send_status():
-    status_url = f"{LEADER_HOST_WEB.rstrip('/')}/api/machine/status"
+    status_url = f"{LEADER_HOST_WEB.rstrip('/')}/api/machine/{MACHINE_ID}/status"
     headers = {
         "Authorization": f"Bearer {MACHINE_API_TOKEN}",
         "Content-Type": "application/json"
