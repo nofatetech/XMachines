@@ -5,6 +5,10 @@
         </h2>
     </x-slot>
 
+    <x-machine-display-card :machine="$machine" :showControls="false" />
+
+
+    @if (false)
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
@@ -14,12 +18,17 @@
                     <p>Local IP: {{ $localIp }}</p>
 
                     <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <x-machine-card :machine="$machine" :showControls="false" />
+                        
+                        <!-- TODO: create this card -->
+                        <x-machine-display-card :machine="$machine" :showControls="false" />
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    @endif
+
+
 
     @push('scripts')
         <script>
