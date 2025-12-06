@@ -24,6 +24,11 @@ return new class extends Migration
             $table->integer('motor_right_speed')->default(0);
             $table->boolean('lights_on')->default(false);
             $table->boolean('fog_lights_on')->default(false);
+
+            $table->integer('happiness')->default(50);
+            $table->integer('hunger')->default(0);
+            $table->boolean('is_auto_driving')->default(false);
+
             $table->timestamps();
         });
     }
