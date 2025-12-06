@@ -30,12 +30,17 @@ LEADER_HOST_WS = os.getenv("LEADER_HOST_WS", "ws://127.0.0.1:8080")
 LEADER_HOST_WEB = os.getenv("LEADER_HOST_WEB", "http://127.0.0.1:8000")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:0.6b")
+REVERB_APP_KEY = os.getenv("REVERB_APP_KEY")
 
 # ------------------------------------------------------------------
 # 3. Mode check
 # ------------------------------------------------------------------
 if APP_MODE not in ["SERVER", "MACHINE"]:
     print(f"Invalid APP_MODE='{APP_MODE}'. Must be SERVER or MACHINE")
+    sys.exit(1)
+
+if not REVERB_APP_KEY:
+    print("ERROR: REVERB_APP_KEY not found in .env file.")
     sys.exit(1)
 
 if APP_MODE == "SERVER":
@@ -170,30 +175,38 @@ def llm(prompt: str, temperature: float = 0.7, max_tokens: int = 512) -> str:
 # ------------------------------------------------------------------
 # 8. Websocket to Leader (SERVER)
 # ------------------------------------------------------------------
-WS_URL = f"{LEADER_HOST_WS.rstrip('/')}/machine/{MACHINE_ID}"
+WS_URL = f"{LEADER_HOST_WS.rstrip('/')}/app/{REVERB_APP_KEY}"
+CHANNEL_NAME = f"machine.{MACHINE_ID}.control"
 ws = None
 
 def send_status():
-    print(">> send_status()")
-    if not (ws and ws.sock and ws.sock.connected):
-        print("ws not connected!")
-        return
-    linear  = (brain.target_l + brain.target_r) / (2 * cfg.steps_per_meter)
-    angular = (brain.target_r - brain.target_l) / (cfg.wheel_track * cfg.steps_per_meter)
-    status = {
-        "type": "status",
-        "machine_id": MACHINE_ID,
-        "linear": round(linear, 3),
-        "angular": round(angular, 3),
-        "is_moving": brain.running,
-        "cpu_temp": round(float(open('/sys/class/thermal/thermal_zone0/temp').read())/1000, 1)
-    }
-    ws.send(json.dumps(status))
+    # This function is not currently used for sending status to the server.
+    # It would require an HTTP POST to the API endpoint.
+    pass
 
 def on_message(_, message):
-    print(">> on_message()")
     try:
-        data = json.loads(message)
+        payload = json.loads(message)
+        event = payload.get("event")
+
+        if event == "pusher:connection_established":
+            print("Connection established with Reverb.")
+            subscribe_message = {
+                "event": "pusher:subscribe",
+                "data": {
+                    "channel": CHANNEL_NAME
+                }
+            }
+            ws.send(json.dumps(subscribe_message))
+            return
+
+        if event == "pusher:subscription_succeeded":
+            print(f"Successfully subscribed to channel: {CHANNEL_NAME}")
+            return
+        
+        # App-specific events have their data field as a JSON string
+        data_str = payload.get('data', '{}')
+        data = json.loads(data_str)
         cmd = data.get("command")
 
         if cmd == "drive":
@@ -201,34 +214,34 @@ def on_message(_, message):
         elif cmd == "stop":
             brain.stop()
         elif cmd == "llm":
-            # Optional: let server trigger LLM calls
             query = data.get("prompt", "")
             response = llm(query)
-            ws.send(json.dumps({"type": "llm_response", "response": response}))
-        send_status()
+            # Sending response back would require a call to the server's API
+            print(f"LLM response: {response}")
+
+    except json.JSONDecodeError:
+        print(f"Received non-JSON message: {message}")
     except Exception as e:
-        print("Command error:", e)
+        print(f"Command error: {e}")
 
 def on_open(w):
-    print(">> on_open()")
-    print(f"Connected to leader @ {LEADER_HOST_WS}")
-    send_status()
+    print(f"Connected to leader @ {WS_URL}")
+    # Subscription happens in on_message after connection is established
 
 def on_close(*_):
-    print(">> on_close()")
     print("Lost connection → reconnecting...")
     time.sleep(5)
     connect_ws()
 
 def connect_ws():
-    print(f">> connect_ws() to {WS_URL}")
     global ws
+    print(f"Attempting to connect to {WS_URL}")
     ws = websocket.WebSocketApp(
         WS_URL,
         on_open=on_open,
         on_message=on_message,
         on_close=on_close,
-        on_error=lambda _, e: print("WS Error:", e)
+        on_error=lambda _, e: print(f"WS Error: {e}")
     )
     ws.run_forever(ping_interval=15, ping_timeout=10)
 
@@ -238,7 +251,7 @@ def connect_ws():
 def status_loop():
     while True:
         time.sleep(1)
-        send_status()
+        # send_status() is disabled as we are focusing on command receiving
 
 # ------------------------------------------------------------------
 # 10. Graceful shutdown
@@ -255,7 +268,8 @@ signal.signal(signal.SIGTERM, shutdown)
 # ------------------------------------------------------------------
 # 11. Start everything
 # ------------------------------------------------------------------
-threading.Thread(target=status_loop, daemon=True).start()
+# status_loop is disabled for now
+# threading.Thread(target=status_loop, daemon=True).start()
 threading.Thread(target=connect_ws, daemon=True).start()
 
 print(f"[{MACHINE_ID}] xbrain1 is ALIVE and awaiting orders.")
