@@ -31,6 +31,7 @@ LEADER_HOST_WEB = os.getenv("LEADER_HOST_WEB", "http://127.0.0.1:8000")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:0.6b")
 REVERB_APP_KEY = os.getenv("REVERB_APP_KEY")
+MACHINE_API_TOKEN = os.getenv("MACHINE_API_TOKEN")
 
 # ------------------------------------------------------------------
 # 3. Mode check
@@ -41,6 +42,10 @@ if APP_MODE not in ["SERVER", "MACHINE"]:
 
 if not REVERB_APP_KEY:
     print("ERROR: REVERB_APP_KEY not found in .env file.")
+    sys.exit(1)
+
+if not MACHINE_API_TOKEN and APP_MODE == "MACHINE":
+    print("ERROR: MACHINE_API_TOKEN not found in .env file. Required for authentication.")
     sys.exit(1)
 
 if APP_MODE == "SERVER":
@@ -180,9 +185,25 @@ CHANNEL_NAME = f"machine.{MACHINE_ID}.control"
 ws = None
 
 def send_status():
-    # This function is not currently used for sending status to the server.
-    # It would require an HTTP POST to the API endpoint.
-    pass
+    status_url = f"{LEADER_HOST_WEB.rstrip('/')}/api/machine/status"
+    headers = {
+        "Authorization": f"Bearer {MACHINE_API_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "machine_id": MACHINE_ID,
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "sensors": {
+            "temp": round(float(open('/sys/class/thermal/thermal_zone0/temp').read())/1000, 1)
+        },
+        "status": "idle" # Replace with actual machine status logic
+    }
+    try:
+        response = requests.post(status_url, headers=headers, json=payload, timeout=5)
+        response.raise_for_status() # Raise an exception for HTTP errors
+        # print(f"Status sent: {payload}")
+    except Exception as e:
+        print(f"[STATUS ERROR] Failed to send status: {e}")
 
 def on_message(_, message):
     try:
@@ -250,8 +271,8 @@ def connect_ws():
 # ------------------------------------------------------------------
 def status_loop():
     while True:
-        time.sleep(1)
-        # send_status() is disabled as we are focusing on command receiving
+        time.sleep(1) # Send status every 1 second
+        send_status()
 
 # ------------------------------------------------------------------
 # 10. Graceful shutdown
@@ -268,8 +289,7 @@ signal.signal(signal.SIGTERM, shutdown)
 # ------------------------------------------------------------------
 # 11. Start everything
 # ------------------------------------------------------------------
-# status_loop is disabled for now
-# threading.Thread(target=status_loop, daemon=True).start()
+threading.Thread(target=status_loop, daemon=True).start()
 threading.Thread(target=connect_ws, daemon=True).start()
 
 print(f"[{MACHINE_ID}] xbrain1 is ALIVE and awaiting orders.")
