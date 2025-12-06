@@ -174,7 +174,7 @@ WS_URL = f"{LEADER_HOST_WS.rstrip('/')}/machine/{MACHINE_ID}"
 ws = None
 
 def send_status():
-    print("send_status!")
+    print(">> send_status()")
     if not (ws and ws.sock and ws.sock.connected):
         print("ws not connected!")
         return
@@ -191,6 +191,7 @@ def send_status():
     ws.send(json.dumps(status))
 
 def on_message(_, message):
+    print(">> on_message()")
     try:
         data = json.loads(message)
         cmd = data.get("command")
@@ -209,15 +210,18 @@ def on_message(_, message):
         print("Command error:", e)
 
 def on_open(w):
+    print(">> on_open()")
     print(f"Connected to leader @ {LEADER_HOST_WS}")
     send_status()
 
 def on_close(*_):
+    print(">> on_close()")
     print("Lost connection → reconnecting...")
     time.sleep(5)
     connect_ws()
 
 def connect_ws():
+    print(f">> connect_ws() to {WS_URL}")
     global ws
     ws = websocket.WebSocketApp(
         WS_URL,
@@ -233,7 +237,7 @@ def connect_ws():
 # ------------------------------------------------------------------
 def status_loop():
     while True:
-        time.sleep(0.8)
+        time.sleep(1)
         send_status()
 
 # ------------------------------------------------------------------
