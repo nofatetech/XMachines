@@ -4,10 +4,20 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import asyncio
 
-from .routers import api, ws, system
-from .database import engine, Base
-from .config import settings
-from .services.tamagotchi import start_tamagotchi_loop
+# CORRECT WAY TO IMPORT
+import routers.api
+import routers.ws
+import routers.system       
+import database.engine
+import database.Base
+import config.settings
+import services.tamagotchi.start_tamagotchi_loop
+
+# WRONG WAY TO IMPORT
+# from .routers import api, ws, system
+# from .database import engine, Base
+# from .config import settings
+# from .services.tamagotchi import start_tamagotchi_loop
 
 app = FastAPI(
     title="XBrain1",
@@ -31,14 +41,15 @@ app.add_middleware(
 async def startup_event():
     Base.metadata.create_all(bind=engine)
     # Auto-register this car when brain boots
-    from .routers.system import register_or_update
-    from .database import SessionLocal
+    from routers.system import register_or_update
+    from database import SessionLocal
     db = SessionLocal()
     await register_or_update(db=db)
     db.close()
 
     # Start tamagotchi & any other background loops
     asyncio.create_task(start_tamagotchi_loop())
+    print("XBrain1 is starting up...")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8089, reload=True)

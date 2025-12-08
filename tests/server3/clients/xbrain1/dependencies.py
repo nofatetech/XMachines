@@ -1,11 +1,11 @@
-from fastapi import Header, HTTPException
+from fastapi import Header, HTTPException, Depends
 from sqlalchemy.orm import Session
-from .database import get_db
-from .crud import get_machine_by_uuid
-from .config import settings
+import database
+import crud
+import config
 
-async def get_current_machine(db: Session = Depends(get_db)):
-    machine = get_machine_by_uuid(db)
+async def get_current_machine(db: Session = Depends(database.get_db)):
+    machine = crud.get_machine_by_uuid(db)
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not registered")
     return machine

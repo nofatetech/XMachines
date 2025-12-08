@@ -1,5 +1,9 @@
 from fastapi import APIRouter, WebSocket, Depends, WebSocketDisconnect
-from .. import crud, schemas, dependencies
+import crud
+import schemas
+import dependencies
+import services.motors
+import services.lights
 
 router = APIRouter()
 
@@ -15,14 +19,12 @@ async def websocket_endpoint(websocket: WebSocket, db = Depends(dependencies.get
                 motor = schemas.MotorControl(**data["payload"])
                 await crud.update_motors(db, motor)
                 # immediately apply to actual GPIO here
-                from ..services.motors import set_tank_drive
-                set_tank_drive(motor.left, motor.right)
+                services.motors.set_tank_drive(motor.left, motor.right)
 
             elif action == "lights":
                 lights = schemas.LightsControl(**data["payload"])
                 crud.update_lights(db, lights)
-                from ..services.lights import apply_lights
-                apply_lights(lights)
+                services.lights.apply_lights(lights)
 
             await websocket.send_json({"status": "ok"})
     except WebSocketDisconnect:

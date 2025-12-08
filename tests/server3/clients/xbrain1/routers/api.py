@@ -1,7 +1,10 @@
 # routers/api.py
 from fastapi import APIRouter, Depends, BackgroundTasks
-from .. import schemas, crud, dependencies
-from ..services import motors, lights
+import schemas
+import crud
+import dependencies
+import services.motors as motors
+import services.lights as lights
 
 router = APIRouter(prefix="/api", tags=["api"])
 

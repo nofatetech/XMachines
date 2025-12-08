@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
-from . import models, schemas
-from .config import settings
+import models
+import schemas
+import config
 
 def get_machine_by_uuid(db: Session):
-    return db.query(models.Machine).filter(models.Machine.uuid == settings.MACHINE_UUID).first()
+    return db.query(models.Machine).filter(models.Machine.uuid == config.settings.MACHINE_UUID).first()
 
 def update_motors(db: Session, motor: schemas.MotorControl):
     machine = get_machine_by_uuid(db)

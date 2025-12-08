@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Boolean, Float, DateTime, ForeignKey, JSON, func
-from .database import Base
+import database
 
-class User(Base):
+class User(database.Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String)
@@ -11,13 +11,13 @@ class User(Base):
 
     machines: Mapped[list["Machine"]] = relationship(back_populates="user")
 
-class MachineType(Base):
+class MachineType(database.Base):
     __tablename__ = "machine_types"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True)
     machines: Mapped[list["Machine"]] = relationship(back_populates="machine_type")
 
-class Machine(Base):
+class Machine(database.Base):
     __tablename__ = "machines"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -46,7 +46,7 @@ class Machine(Base):
     machine_type: Mapped["MachineType"] = relationship(back_populates="machines")
     nodes: Mapped[list["Node"]] = relationship(back_populates="machine")
 
-class Node(Base):
+class Node(database.Base):
     __tablename__ = "nodes"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     machine_id: Mapped[int] = mapped_column(ForeignKey("machines.id"))
