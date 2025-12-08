@@ -1,0 +1,11 @@
+fastapi==0.115.2
+uvicorn[standard]==0.32.0
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+pydantic-settings==2.6.0
+python-dotenv==1.0.1
+RPi.GPIO==0.7.1
+# Optional but you WILL want these very soon
+picamera2==0.3.18          # Pi 5 / Pi 4 Bullseye/Bookworm camera
+opencv-python-headless==4.10.0.84
+httpx==0.27.2              # for calling Ollama or your Laravel API
