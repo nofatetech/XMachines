@@ -1,4 +1,5 @@
 import os
+import logging
 from abc import ABC, abstractmethod
 from lifecycle import Lifecycle
 
@@ -7,7 +8,7 @@ from lifecycle import Lifecycle
 try:
     from gpiozero import Motor
 except ImportError:
-    print("⚠️ [MOTOR] WARN: gpiozero library not found. GPIO motor control will not be available.")
+    logging.warning("⚠️ [MOTOR] gpiozero library not found. GPIO motor control will not be available.")
     Motor = None
 
 def clamp(v, lo=-1.0, hi=1.0):
@@ -32,21 +33,18 @@ class AbstractMotorController(ABC):
 class SimulatedTankMotorController(AbstractMotorController):
     """
     A motor controller for simulated environments.
-    It calculates motor speeds and prints them to the console.
+    It calculates motor speeds and logs them.
     """
     def drive(self, linear: float, angular: float):
         if self.state.lifecycle != Lifecycle.ACTIVE:
-            # This can be spammy, so let's skip the emoji here.
-            # For example, an agent could send commands before the machine is active.
-            print("[MOTOR] Simulated drive ignored (not ACTIVE)")
             return
 
         left = clamp(linear - angular)
         right = clamp(linear + angular)
-        print(f"🕹️ [MOTOR] SIMULATED: LEFT={left:.2f} RIGHT={right:.2f}")
+        logging.info(f"🕹️  [MOTOR] SIMULATED: LEFT={left:.2f} RIGHT={right:.2f}")
 
     def stop(self):
-        print("🛑 [MOTOR] SIMULATED: STOP")
+        logging.info("🛑 [MOTOR] SIMULATED: STOP")
 
 class GPIOTankMotorController(AbstractMotorController):
     """
@@ -67,10 +65,10 @@ class GPIOTankMotorController(AbstractMotorController):
 
             self.left_motor = Motor(forward=left_fwd_pin, backward=left_bwd_pin)
             self.right_motor = Motor(forward=right_fwd_pin, backward=right_bwd_pin)
-            print("✅ [MOTOR] GPIO controller initialized.")
+            logging.info("✅ [MOTOR] GPIO controller initialized.")
 
         except (ValueError, TypeError) as e:
-            print(f"❌ [MOTOR] ERROR: Invalid GPIO pin configuration in environment variables. {e}")
+            logging.error(f"❌ [MOTOR] ERROR: Invalid GPIO pin configuration in environment variables. {e}")
             raise ValueError("Could not initialize GPIO motors due to missing or invalid pin configuration.") from e
 
     def drive(self, linear: float, angular:float):
@@ -100,7 +98,7 @@ class GPIOTankMotorController(AbstractMotorController):
     def stop(self):
         self.left_motor.stop()
         self.right_motor.stop()
-        print("🛑 [MOTOR] GPIO: STOP")
+        logging.info("🛑 [MOTOR] GPIO: STOP")
 
 class NullMotorController(AbstractMotorController):
     """A motor controller that does nothing. Used for machines without motors."""
