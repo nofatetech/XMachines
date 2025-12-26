@@ -10,13 +10,30 @@ load_dotenv()
 
 from state import MachineState
 from lifecycle import Lifecycle
-from motor import TankMotorController
+from motor import SimulatedTankMotorController, GPIOTankMotorController, NullMotorController, AbstractMotorController
 from udp_comm import UDPServer
 from coordinator_client import send_heartbeat
 
+def create_motor_controller(state: MachineState) -> AbstractMotorController:
+    """Factory function to create the appropriate motor controller based on configuration."""
+    controller_type = os.getenv("MOTOR_CONTROLLER", "simulation").lower()
+    
+    if controller_type == "simulation":
+        print("[MAIN] Using SimulatedTankMotorController.")
+        return SimulatedTankMotorController(state)
+    elif controller_type == "gpio":
+        print("[MAIN] Using GPIOTankMotorController.")
+        return GPIOTankMotorController(state)
+    elif controller_type == "none":
+        print("[MAIN] Using NullMotorController.")
+        return NullMotorController(state)
+    else:
+        raise ValueError(f"Invalid MOTOR_CONTROLLER type: {controller_type}")
+
+# --- Initialization ---
 machine_id = os.getenv("MACHINE_ID", "machine-001")
 state = MachineState(machine_id=machine_id)
-motor = TankMotorController(state)
+motor = create_motor_controller(state)
 udp = UDPServer(state, motor)
 
 app = FastAPI()
