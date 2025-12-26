@@ -1,12 +1,15 @@
 import socket
 import json
 import time
+import os
 
 class UDPServer:
-    def __init__(self, state, motor, port=9999):
+    def __init__(self, state, motor, port=None):
         self.state = state
         self.motor = motor
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if port is None:
+            port = int(os.getenv("MACHINE_UDP_PORT", 9999))
         self.sock.bind(("0.0.0.0", port))
         self.sock.setblocking(False)
 

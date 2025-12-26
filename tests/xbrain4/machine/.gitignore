@@ -77,3 +77,4 @@ dist/
 build/
 *.tar.gz
 *.zip
+.env

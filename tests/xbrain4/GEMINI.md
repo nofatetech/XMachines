@@ -39,7 +39,29 @@ The `machine/` directory contains the core components of a machine node:
 *   **`machine/llm_agent.py`**: A placeholder for an LLM (Large Language Model) agent. It demonstrates how an LLM's "decision" (e.g., `linear` and `angular` velocities) could be sent via UDP to the machine node, but *never* directly actuates.
 *   **`machine/requirements.txt`**: Lists the Python dependencies required for the project (e.g., `fastapi`, `uvicorn`, `requests`).
 
-## 4. Development Workflow
+## 4. Configuration
+
+The application is configured using environment variables, which can be placed in a `.env` file in the `machine/` directory. An example file, `.env.example`, is provided as a template.
+
+To set up your local configuration, copy the example file:
+```bash
+cp machine/.env.example machine/.env
+```
+Then, edit `machine/.env` with your desired settings.
+
+**Available Environment Variables:**
+
+| Variable              | Description                                      | Default               |
+| --------------------- | ------------------------------------------------ | --------------------- |
+| `MACHINE_ID`          | Unique identifier for the machine.               | `"machine-001"`       |
+| `MACHINE_API_HOST`    | Host for the machine's FastAPI server.           | `"0.0.0.0"`           |
+| `MACHINE_API_PORT`    | Port for the machine's FastAPI server.           | `8001`                |
+| `MACHINE_UDP_PORT`    | Port for the machine's UDP command listener.    | `9999`                |
+| `AGENT_TARGET_HOST`   | Target host for the LLM agent to send commands to. | `"127.0.0.1"`         |
+| `AGENT_TARGET_PORT`   | Target port for the LLM agent.                   | `9999`                |
+| `COORDINATOR_URL`     | Base URL for the fleet coordinator.              | `"http://127.0.0.1:8000"`|
+
+## 5. Development Workflow
 
 My workflow for addressing tasks will generally follow these steps:
 

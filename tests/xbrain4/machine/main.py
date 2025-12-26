@@ -1,7 +1,12 @@
 import time
 import threading
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 import uvicorn
+
+load_dotenv()
+
 
 from state import MachineState
 from lifecycle import Lifecycle
@@ -9,7 +14,8 @@ from motor import TankMotorController
 from udp_comm import UDPServer
 from coordinator_client import send_heartbeat
 
-state = MachineState(machine_id="machine-001")
+machine_id = os.getenv("MACHINE_ID", "machine-001")
+state = MachineState(machine_id=machine_id)
 motor = TankMotorController(state)
 udp = UDPServer(state, motor)
 
@@ -58,4 +64,6 @@ if __name__ == "__main__":
     threading.Thread(target=udp_loop, daemon=True).start()
     threading.Thread(target=heartbeat_loop, daemon=True).start()
 
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    api_host = os.getenv("MACHINE_API_HOST", "0.0.0.0")
+    api_port = int(os.getenv("MACHINE_API_PORT", 8001))
+    uvicorn.run(app, host=api_host, port=api_port)
