@@ -24,8 +24,8 @@ from coordinator_client import send_heartbeat
 
 def create_motor_controller(state: MachineState) -> AbstractMotorController:
     """Factory function to create the appropriate motor controller based on configuration."""
-    # Default to 'stepper' for the prototype, as requested
-    controller_type = os.getenv("MOTOR_CONTROLLER", "stepper").lower()
+    # Default to 'simulation' for safety and ease of use.
+    controller_type = os.getenv("MOTOR_CONTROLLER", "simulation").lower()
     
     if controller_type == "simulation":
         logging.info("🕹️  [MAIN] Using SimulatedTankMotorController.")
