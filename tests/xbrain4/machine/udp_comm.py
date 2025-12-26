@@ -1,18 +1,23 @@
-import socket
-import json
 import time
-import os
+import json
+import socket
 import logging
+from state import MachineState
+from motor import AbstractMotorController
+from arm import AbstractArmController
 
 class UDPServer:
-    def __init__(self, state, motor, port=None):
+    def __init__(self, state: MachineState, motor_controller: AbstractMotorController, arm_controller: AbstractArmController):
         self.state = state
-        self.motor = motor
+        self.motor = motor_controller
+        self.arm = arm_controller
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        if port is None:
-            port = int(os.getenv("MACHINE_UDP_PORT", 9999))
+        
+        port = int(os.getenv("MACHINE_UDP_PORT", 9999))
         self.sock.bind(("0.0.0.0", port))
         self.sock.setblocking(False)
+        self.last_command_ts = 0.0
+        self.watchdog_timeout = 1.0 # seconds
 
     def poll(self):
         """Poll for incoming UDP messages."""
@@ -22,9 +27,17 @@ class UDPServer:
             self.last_command_ts = time.time()
             message = json.loads(data.decode())
             
-            # Basic validation
-            if "linear" in message and "angular" in message:
-                self.motor.drive(message["linear"], message["angular"])
+            # Check for drive commands
+            if "drive" in message:
+                drive_cmd = message["drive"]
+                if "linear" in drive_cmd and "angular" in drive_cmd:
+                    self.motor.drive(drive_cmd["linear"], drive_cmd["angular"])
+
+            # Check for arm commands
+            if "arm_target" in message:
+                arm_cmd = message["arm_target"]
+                if "joint1" in arm_cmd and "joint2" in arm_cmd and "clamp" in arm_cmd:
+                    self.arm.set_pose(arm_cmd["joint1"], arm_cmd["joint2"], arm_cmd["clamp"])
 
         except BlockingIOError:
             # No data received

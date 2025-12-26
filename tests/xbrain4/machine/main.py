@@ -16,6 +16,7 @@ setup_logging()
 from state import MachineState
 from lifecycle import Lifecycle
 from motor import SimulatedTankMotorController, DCTankMotorController, StepperTankMotorController, NullMotorController, AbstractMotorController
+from arm import SimulatedArmController, GPIOArmController, AbstractArmController as AbstractArmController
 from udp_comm import UDPServer
 from coordinator_client import send_heartbeat
 # from tui import MachineTUI
@@ -40,6 +41,19 @@ def create_motor_controller(state: MachineState) -> AbstractMotorController:
         return NullMotorController(state)
     else:
         raise ValueError(f"Invalid MOTOR_CONTROLLER type: {controller_type}")
+
+def create_arm_controller(state: MachineState) -> AbstractArmController:
+    """Factory function to create the appropriate arm controller."""
+    controller_type = os.getenv("ARM_CONTROLLER", "simulation").lower()
+
+    if controller_type == "simulation":
+        logging.info("🦾 [MAIN] Using SimulatedArmController.")
+        return SimulatedArmController(state)
+    elif controller_type == "gpio":
+        logging.info("🦾 [MAIN] Using GPIOArmController.")
+        return GPIOArmController(state)
+    else:
+        raise ValueError(f"Invalid ARM_CONTROLLER type: {controller_type}")
 
 # --- API Setup ---
 app = FastAPI()
@@ -95,7 +109,8 @@ if __name__ == "__main__":
     machine_id = os.getenv("MACHINE_ID", "machine-001")
     state = MachineState(machine_id=machine_id)
     motor = create_motor_controller(state)
-    udp = UDPServer(state, motor)
+    arm = create_arm_controller(state)
+    udp = UDPServer(state, motor, arm)
 
     state.lifecycle = Lifecycle.IDLE
 
