@@ -18,7 +18,7 @@ from lifecycle import Lifecycle
 from motor import SimulatedTankMotorController, GPIOTankMotorController, NullMotorController, AbstractMotorController
 from udp_comm import UDPServer
 from coordinator_client import send_heartbeat
-from tui import MachineTUI
+# from tui import MachineTUI
 
 
 def create_motor_controller(state: MachineState) -> AbstractMotorController:
@@ -103,13 +103,18 @@ if __name__ == "__main__":
     api_host = os.getenv("MACHINE_API_HOST", "0.0.0.0")
     api_port = int(os.getenv("MACHINE_API_PORT", 8001))
     
-    # Disable Uvicorn's own loggers to prevent duplicate output, we will use our own.
-    uvicorn_config = uvicorn.Config(app, host=api_host, port=api_port, log_config=None)
+    uvicorn_config = uvicorn.Config(app, host=api_host, port=api_port)
     server = uvicorn.Server(uvicorn_config)
     threading.Thread(target=server.run, daemon=True).start()
 
-    # Run the TUI
-    tui = MachineTUI(state)
-    tui.run()
+    logging.info("Application started. Press Ctrl+C to shut down.")
 
-    logging.info("Application shutting down.")
+    # Keep the main thread alive until shutdown
+    try:
+        while state.lifecycle != Lifecycle.SHUTDOWN:
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        logging.info("KeyboardInterrupt received. Shutting down...")
+    finally:
+        state.lifecycle = Lifecycle.SHUTDOWN
+        logging.info("Application shutting down.")
