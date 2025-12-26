@@ -15,7 +15,7 @@ setup_logging()
 
 from state import MachineState
 from lifecycle import Lifecycle
-from motor import SimulatedTankMotorController, GPIOTankMotorController, StepperTankMotorController, NullMotorController, AbstractMotorController
+from motor import SimulatedTankMotorController, DCTankMotorController, StepperTankMotorController, NullMotorController, AbstractMotorController
 from udp_comm import UDPServer
 from coordinator_client import send_heartbeat
 # from tui import MachineTUI
@@ -29,9 +29,9 @@ def create_motor_controller(state: MachineState) -> AbstractMotorController:
     if controller_type == "simulation":
         logging.info("🕹️  [MAIN] Using SimulatedTankMotorController.")
         return SimulatedTankMotorController(state)
-    elif controller_type == "gpio":
-        logging.info("🤖 [MAIN] Using GPIOTankMotorController (for DC motors).")
-        return GPIOTankMotorController(state)
+    elif controller_type == "dc":
+        logging.info("🤖 [MAIN] Using DC Motor Controller (via GPIO).")
+        return DCTankMotorController(state)
     elif controller_type == "stepper":
         logging.info("⚙️ [MAIN] Using StepperTankMotorController.")
         return StepperTankMotorController(state)

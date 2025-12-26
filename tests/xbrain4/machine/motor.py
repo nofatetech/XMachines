@@ -50,15 +50,15 @@ class SimulatedTankMotorController(AbstractMotorController):
     def stop(self):
         logging.info("🛑 [MOTOR] SIMULATED: STOP")
 
-class GPIOTankMotorController(AbstractMotorController):
+class DCTankMotorController(AbstractMotorController):
     """
-    A motor controller that interfaces with real hardware via GPIO pins.
+    A motor controller that interfaces with DC motors via GPIO pins.
     Uses the gpiozero library to control two motors.
     """
     def __init__(self, state):
         super().__init__(state)
         if not Motor or not hasattr(Motor, 'forward'): # Check if Motor is the real class
-            raise ImportError("Cannot initialize GPIOTankMotorController: gpiozero library is required.")
+            raise ImportError("Cannot initialize DCTankMotorController: gpiozero library is required.")
         
         try:
             # Get pin numbers from environment variables
