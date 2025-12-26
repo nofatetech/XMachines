@@ -19,13 +19,13 @@ def create_motor_controller(state: MachineState) -> AbstractMotorController:
     controller_type = os.getenv("MOTOR_CONTROLLER", "simulation").lower()
     
     if controller_type == "simulation":
-        print("[MAIN] Using SimulatedTankMotorController.")
+        print("🕹️  [MAIN] Using SimulatedTankMotorController.")
         return SimulatedTankMotorController(state)
     elif controller_type == "gpio":
-        print("[MAIN] Using GPIOTankMotorController.")
+        print("🤖 [MAIN] Using GPIOTankMotorController.")
         return GPIOTankMotorController(state)
     elif controller_type == "none":
-        print("[MAIN] Using NullMotorController.")
+        print("💨 [MAIN] Using NullMotorController.")
         return NullMotorController(state)
     else:
         raise ValueError(f"Invalid MOTOR_CONTROLLER type: {controller_type}")
