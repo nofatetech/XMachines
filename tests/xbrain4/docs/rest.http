@@ -1,0 +1,38 @@
+
+
+###
+
+GET http://127.0.0.1:8001/state HTTP/1.1
+# Response
+
+# json
+# {
+#   "id": "machine-001",
+#   "lifecycle": "idle",
+#   "mode": "manual"
+# }
+
+###
+
+POST http://127.0.0.1:8001/activate HTTP/1.1
+content-type: application/json
+
+
+###
+
+POST http://127.0.0.1:8001/shutdown HTTP/1.1
+content-type: application/json
+
+
+###
+
+POST http://127.0.0.1:8001/mode HTTP/1.1
+content-type: application/json
+
+{
+  "mode": "autonomous"
+}
+
+###
+
+
