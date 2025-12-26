@@ -6,10 +6,13 @@ from lifecycle import Lifecycle
 # Attempt to import gpiozero, but don't fail if it's not available.
 # This allows the simulation to run on systems without GPIO hardware or libraries.
 try:
-    from gpiozero import Motor
+    from gpiozero import Motor, PWMOutputDevice, DigitalOutputDevice
 except ImportError:
     logging.warning("⚠️ [MOTOR] gpiozero library not found. GPIO motor control will not be available.")
-    Motor = None
+    # Define dummy classes so the rest of the file can be parsed
+    class Motor: pass
+    class PWMOutputDevice: pass
+    class DigitalOutputDevice: pass
 
 def clamp(v, lo=-1.0, hi=1.0):
     """Clamps a value to the specified range [-1.0, 1.0]."""
@@ -41,7 +44,8 @@ class SimulatedTankMotorController(AbstractMotorController):
 
         left = clamp(linear - angular)
         right = clamp(linear + angular)
-        logging.info(f"🕹️  [MOTOR] SIMULATED: LEFT={left:.2f} RIGHT={right:.2f}")
+        if left != 0 and right != 0.0:
+            logging.info(f"🕹️  [MOTOR] SIMULATED: LEFT={left:.2f} RIGHT={right:.2f}")
 
     def stop(self):
         logging.info("🛑 [MOTOR] SIMULATED: STOP")
@@ -53,7 +57,7 @@ class GPIOTankMotorController(AbstractMotorController):
     """
     def __init__(self, state):
         super().__init__(state)
-        if Motor is None:
+        if not Motor or not hasattr(Motor, 'forward'): # Check if Motor is the real class
             raise ImportError("Cannot initialize GPIOTankMotorController: gpiozero library is required.")
         
         try:
@@ -65,11 +69,11 @@ class GPIOTankMotorController(AbstractMotorController):
 
             self.left_motor = Motor(forward=left_fwd_pin, backward=left_bwd_pin)
             self.right_motor = Motor(forward=right_fwd_pin, backward=right_bwd_pin)
-            logging.info("✅ [MOTOR] GPIO controller initialized.")
+            logging.info("✅ [MOTOR] GPIO DC motor controller initialized.")
 
         except (ValueError, TypeError) as e:
             logging.error(f"❌ [MOTOR] ERROR: Invalid GPIO pin configuration in environment variables. {e}")
-            raise ValueError("Could not initialize GPIO motors due to missing or invalid pin configuration.") from e
+            raise ValueError("Could not initialize GPIO DC motors due to missing or invalid pin configuration.") from e
 
     def drive(self, linear: float, angular:float):
         if self.state.lifecycle != Lifecycle.ACTIVE:
@@ -99,6 +103,61 @@ class GPIOTankMotorController(AbstractMotorController):
         self.left_motor.stop()
         self.right_motor.stop()
         logging.info("🛑 [MOTOR] GPIO: STOP")
+
+
+class StepperTankMotorController(AbstractMotorController):
+    """
+    A motor controller for stepper motors using STEP/DIR signals.
+    Uses PWM to control the step frequency (velocity).
+    """
+    MAX_FREQUENCY = 2000 # Steps per second at max speed
+
+    def __init__(self, state):
+        super().__init__(state)
+        if not PWMOutputDevice or not hasattr(PWMOutputDevice, 'frequency'): # Check if it's the real class
+             raise ImportError("Cannot initialize StepperTankMotorController: gpiozero library is required.")
+
+        try:
+            # Get pin numbers from environment variables
+            left_step_pin = int(os.getenv("LEFT_MOTOR_STEP_PIN"))
+            left_dir_pin = int(os.getenv("LEFT_MOTOR_DIR_PIN"))
+            right_step_pin = int(os.getenv("RIGHT_MOTOR_STEP_PIN"))
+            right_dir_pin = int(os.getenv("RIGHT_MOTOR_DIR_PIN"))
+
+            self.left_dir = DigitalOutputDevice(left_dir_pin)
+            self.right_dir = DigitalOutputDevice(right_dir_pin)
+
+            # Use PWM to generate step pulses
+            self.left_step = PWMOutputDevice(left_step_pin)
+            self.right_step = PWMOutputDevice(right_step_pin)
+            
+            logging.info("✅ [MOTOR] GPIO stepper motor controller initialized.")
+
+        except (ValueError, TypeError) as e:
+            logging.error(f"❌ [MOTOR] ERROR: Invalid GPIO pin configuration for stepper motors. {e}")
+            raise ValueError("Could not initialize GPIO stepper motors due to missing or invalid pin configuration.") from e
+
+    def drive(self, linear: float, angular: float):
+        if self.state.lifecycle != Lifecycle.ACTIVE:
+            return
+
+        left_speed = clamp(linear - angular)
+        right_speed = clamp(linear + angular)
+
+        # Set direction
+        # Note: The mapping of value (0/1) to direction (forward/backward)
+        # depends on your specific wiring and motor driver.
+        self.left_dir.value = 1 if left_speed < 0 else 0
+        self.right_dir.value = 1 if right_speed < 0 else 0
+
+        # Set speed (frequency of step pulses)
+        self.left_step.frequency = abs(left_speed) * self.MAX_FREQUENCY
+        self.right_step.frequency = abs(right_speed) * self.MAX_FREQUENCY
+    
+    def stop(self):
+        self.left_step.frequency = 0
+        self.right_step.frequency = 0
+        logging.info("🛑 [MOTOR] GPIO Stepper: STOP")
 
 class NullMotorController(AbstractMotorController):
     """A motor controller that does nothing. Used for machines without motors."""

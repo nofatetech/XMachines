@@ -2,6 +2,7 @@ import socket
 import json
 import time
 import os
+import logging
 
 class UDPServer:
     def __init__(self, state, motor, port=None):
@@ -14,18 +15,24 @@ class UDPServer:
         self.sock.setblocking(False)
 
     def poll(self):
+        """Poll for incoming UDP messages."""
         try:
-            data, _ = self.sock.recvfrom(1024)
-            msg = json.loads(data.decode())
-
-            linear = float(msg.get("linear", 0.0))
-            angular = float(msg.get("angular", 0.0))
-
-            self.state.update_command_timestamp()
-            self.motor.drive(linear, angular)
+            data, addr = self.sock.recvfrom(1024)
+            logging.info(f"Received UDP message from {addr}: {data.decode()}")
+            self.last_command_ts = time.time()
+            message = json.loads(data.decode())
+            
+            # Basic validation
+            if "linear" in message and "angular" in message:
+                self.motor.drive(message["linear"], message["angular"])
 
         except BlockingIOError:
+            # No data received
             pass
+        except json.JSONDecodeError:
+            logging.warning("Received invalid JSON in UDP message.")
+        except Exception as e:
+            logging.error(f"An unexpected error occurred in UDP poll: {e}")
 
     def watchdog(self, timeout=0.5):
         if time.time() - self.state.last_command_ts > timeout:
