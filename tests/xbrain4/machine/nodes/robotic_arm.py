@@ -118,3 +118,12 @@ class GPIORoboticArmController(AbstractRoboticArmController):
         self.joint2_servo.detach()
         self.clamp_servo.detach()
         self.log.info("🛑 GPIO: Servos detached")
+
+
+class NullRoboticArmController(AbstractRoboticArmController):
+    """An arm controller that does nothing. Used for machines without arms."""
+    def set_pose(self, joint1: float, joint2: float, clamp_val: int):
+        pass
+
+    def stop(self):
+        pass

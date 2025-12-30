@@ -15,7 +15,8 @@ import threading
 from machine.state import MachineState
 from machine.lifecycle import Lifecycle
 from machine.nodes.tank_motor import SimulatedTankMotorController, DCTankMotorController, StepperTankMotorController, NullMotorController, AbstractTankMotorController
-from machine.nodes.robotic_arm import SimulatedRoboticArmController, GPIORoboticArmController, AbstractRoboticArmController
+from machine.nodes.robotic_arm import SimulatedRoboticArmController, GPIORoboticArmController, AbstractRoboticArmController, NullRoboticArmController
+
 from machine.udp_comm import UDPServer # UDP server is a node that also manages other nodes
 from machine.services.api_service import APIService
 from machine.services.heartbeat_service import HeartbeatService
@@ -43,7 +44,7 @@ def create_motor_controller(state: MachineState) -> AbstractTankMotorController:
 
 def create_arm_controller(state: MachineState) -> AbstractRoboticArmController:
     """Factory function to create the appropriate arm controller."""
-    controller_type = os.getenv("ARM_CONTROLLER", "simulation").lower()
+    controller_type = os.getenv("ARM_CONTROLLER", "none").lower()
 
     if controller_type == "simulation":
         logging.info("🦾 [MACHINE1] Using SimulatedRoboticArmController.")
@@ -51,8 +52,13 @@ def create_arm_controller(state: MachineState) -> AbstractRoboticArmController:
     elif controller_type == "gpio":
         logging.info("🦾 [MACHINE1] Using GPIORoboticArmController.")
         return GPIORoboticArmController(state)
+    elif controller_type == "none":
+        logging.info("🦾 [MACHINE1] Using NullRoboticArmController.")
+        return NullRoboticArmController(state)
     else:
         raise ValueError(f"Invalid ARM_CONTROLLER type: {controller_type}")
+
+
 
 # --- Main Execution ---
 if __name__ == "__main__":
@@ -64,7 +70,11 @@ if __name__ == "__main__":
     # Initialize nodes
     motor_controller = create_motor_controller(state)
     arm_controller = create_arm_controller(state)
-    udp_server = UDPServer(state, motor_controller, arm_controller)
+
+    udp_server = UDPServer(state)
+    udp_server.register_command("drive", motor_controller.drive)
+    if not isinstance(arm_controller, NullRoboticArmController):
+        udp_server.register_command("set_pose", arm_controller.set_pose)
 
     # Start nodes (if they have active components like UDP server poll loop)
     # UDP server runs its own internal loop and manages command dispatch to motor/arm

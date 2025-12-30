@@ -10,12 +10,12 @@ from machine.state import MachineState
 from machine.nodes.tank_motor import AbstractTankMotorController
 from machine.nodes.robotic_arm import AbstractRoboticArmController
 
+
 class UDPServer(AbstractNode):
-    def __init__(self, state: MachineState, motor_controller: AbstractTankMotorController, arm_controller: AbstractRoboticArmController):
+    def __init__(self, state: MachineState):
         super().__init__(state)
         self.log = logging.getLogger(self.__class__.__name__)
-        self.motor = motor_controller
-        self.arm = arm_controller
+        self.command_handlers = {}
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
         port = int(os.getenv("MACHINE_UDP_PORT", 9999))
@@ -25,6 +25,10 @@ class UDPServer(AbstractNode):
         self.watchdog_timeout = 1.0 # seconds
         self._running = False
         self._thread = None
+
+    def register_command(self, command: str, handler):
+        self.log.info(f"Registering command '{command}' to handler {handler.__name__}")
+        self.command_handlers[command] = handler
 
     def _udp_loop(self):
         while self._running and self.state.lifecycle != self.state.lifecycle.SHUTDOWN:
@@ -67,21 +71,15 @@ class UDPServer(AbstractNode):
         """Poll for incoming UDP messages."""
         try:
             data, addr = self.sock.recvfrom(1024)
-            logging.info(f"Received UDP message from {addr}: {data.decode()}")
+            self.log.debug(f"Received UDP message from {addr}: {data.decode()}")
             self.last_command_ts = time.time()
             message = json.loads(data.decode())
             
-            # Check for drive commands
-            if "drive" in message:
-                drive_cmd = message["drive"]
-                if "linear" in drive_cmd and "angular" in drive_cmd:
-                    self.motor.drive(drive_cmd["linear"], drive_cmd["angular"])
-
-            # Check for arm commands
-            if "arm_target" in message:
-                arm_cmd = message["arm_target"]
-                if "joint1" in arm_cmd and "joint2" in arm_cmd and "clamp" in arm_cmd:
-                    self.arm.set_pose(arm_cmd["joint1"], arm_cmd["joint2"], arm_cmd["clamp"])
+            for command, payload in message.items():
+                if command in self.command_handlers:
+                    self.command_handlers[command](**payload)
+                else:
+                    self.log.warning(f"Received unknown command: {command}")
 
         except BlockingIOError:
             # No data received
@@ -92,5 +90,9 @@ class UDPServer(AbstractNode):
             logging.error(f"An unexpected error occurred in UDP poll: {e}")
 
     def watchdog(self, timeout=0.5):
-        if time.time() - self.state.last_command_ts > timeout:
-            self.motor.drive(0.0, 0.0)
+        if time.time() - self.last_command_ts > timeout:
+            if 'drive' in self.command_handlers:
+                # Assuming the drive handler is a method of a node that has a stop method.
+                # This is a bit of a hack, a better solution would be to have a more generic
+                -                # way to stop all nodes.
+                self.command_handlers['drive'].__self__.stop()
