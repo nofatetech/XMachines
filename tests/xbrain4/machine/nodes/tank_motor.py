@@ -1,7 +1,10 @@
 import os
 import logging
 from abc import ABC, abstractmethod
-from lifecycle import Lifecycle
+
+from machine.core.node import AbstractNode
+from machine.state import MachineState
+from machine.lifecycle import Lifecycle
 
 # Attempt to import gpiozero, but don't fail if it's not available.
 # This allows the simulation to run on systems without GPIO hardware or libraries.
@@ -18,22 +21,31 @@ def clamp(v, lo=-1.0, hi=1.0):
     """Clamps a value to the specified range [-1.0, 1.0]."""
     return max(lo, min(hi, v))
 
-class AbstractMotorController(ABC):
-    """Abstract base class for all motor controllers."""
-    def __init__(self, state):
-        self.state = state
+class AbstractTankMotorController(AbstractNode):
+    """Abstract base class for all tank motor controllers."""
+    def __init__(self, state: MachineState):
+        super().__init__(state)
+        self.log = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
     def drive(self, linear: float, angular: float):
         """Drives the machine with a given linear and angular velocity."""
         pass
+    
+    def start(self):
+        self.log.info("Tank Motor Controller started.")
 
-    @abstractmethod
-    def stop(self):
-        """Stops all motor activity."""
+    def update(self):
+        # The drive command is received asynchronously via UDP, so the update loop
+        # for motors primarily focuses on safety (e.g., watchdog) rather than active driving.
+        # The actual driving is triggered by UDP command reception.
         pass
 
-class SimulatedTankMotorController(AbstractMotorController):
+    def stop(self):
+        """Stops all motor activity and cleans up resources."""
+        self.log.info("Tank Motor Controller stopped.")
+
+class SimulatedTankMotorController(AbstractTankMotorController):
     """
     A motor controller for simulated environments.
     It calculates motor speeds and logs them.
@@ -45,17 +57,18 @@ class SimulatedTankMotorController(AbstractMotorController):
         left = clamp(linear - angular)
         right = clamp(linear + angular)
         if left != 0 and right != 0.0:
-            logging.info(f"🕹️  [MOTOR] SIMULATED: LEFT={left:.2f} RIGHT={right:.2f}")
+            self.log.info(f"🕹️  SIMULATED: LEFT={left:.2f} RIGHT={right:.2f}")
 
     def stop(self):
-        logging.info("🛑 [MOTOR] SIMULATED: STOP")
+        self.log.info("🛑 SIMULATED: STOP")
 
-class DCTankMotorController(AbstractMotorController):
+
+class DCTankMotorController(AbstractTankMotorController):
     """
     A motor controller that interfaces with DC motors via GPIO pins.
     Uses the gpiozero library to control two motors.
     """
-    def __init__(self, state):
+    def __init__(self, state: MachineState):
         super().__init__(state)
         if not Motor or not hasattr(Motor, 'forward'): # Check if Motor is the real class
             raise ImportError("Cannot initialize DCTankMotorController: gpiozero library is required.")
@@ -69,10 +82,10 @@ class DCTankMotorController(AbstractMotorController):
 
             self.left_motor = Motor(forward=left_fwd_pin, backward=left_bwd_pin)
             self.right_motor = Motor(forward=right_fwd_pin, backward=right_bwd_pin)
-            logging.info("✅ [MOTOR] GPIO DC motor controller initialized.")
+            self.log.info("✅ GPIO DC motor controller initialized.")
 
         except (ValueError, TypeError) as e:
-            logging.error(f"❌ [MOTOR] ERROR: Invalid GPIO pin configuration in environment variables. {e}")
+            self.log.error(f"❌ ERROR: Invalid GPIO pin configuration in environment variables. {e}")
             raise ValueError("Could not initialize GPIO DC motors due to missing or invalid pin configuration.") from e
 
     def drive(self, linear: float, angular:float):
@@ -102,17 +115,17 @@ class DCTankMotorController(AbstractMotorController):
     def stop(self):
         self.left_motor.stop()
         self.right_motor.stop()
-        logging.info("🛑 [MOTOR] GPIO: STOP")
+        self.log.info("🛑 GPIO: STOP")
 
 
-class StepperTankMotorController(AbstractMotorController):
+class StepperTankMotorController(AbstractTankMotorController):
     """
     A motor controller for stepper motors using STEP/DIR signals.
     Uses PWM to control the step frequency (velocity).
     """
     MAX_FREQUENCY = 2000 # Steps per second at max speed
 
-    def __init__(self, state):
+    def __init__(self, state: MachineState):
         super().__init__(state)
         if not PWMOutputDevice or not hasattr(PWMOutputDevice, 'frequency'): # Check if it's the real class
              raise ImportError("Cannot initialize StepperTankMotorController: gpiozero library is required.")
@@ -131,10 +144,10 @@ class StepperTankMotorController(AbstractMotorController):
             self.left_step = PWMOutputDevice(left_step_pin)
             self.right_step = PWMOutputDevice(right_step_pin)
             
-            logging.info("✅ [MOTOR] GPIO stepper motor controller initialized.")
+            self.log.info("✅ GPIO stepper motor controller initialized.")
 
         except (ValueError, TypeError) as e:
-            logging.error(f"❌ [MOTOR] ERROR: Invalid GPIO pin configuration for stepper motors. {e}")
+            self.log.error(f"❌ ERROR: Invalid GPIO pin configuration for stepper motors. {e}")
             raise ValueError("Could not initialize GPIO stepper motors due to missing or invalid pin configuration.") from e
 
     def drive(self, linear: float, angular: float):
@@ -157,12 +170,13 @@ class StepperTankMotorController(AbstractMotorController):
     def stop(self):
         self.left_step.frequency = 0
         self.right_step.frequency = 0
-        logging.info("🛑 [MOTOR] GPIO Stepper: STOP")
+        self.log.info("🛑 GPIO Stepper: STOP")
 
-class NullMotorController(AbstractMotorController):
+
+class NullMotorController(AbstractTankMotorController):
     """A motor controller that does nothing. Used for machines without motors."""
     def drive(self, linear: float, angular: float):
         pass # Do nothing
-
+    
     def stop(self):
         pass # Do nothing

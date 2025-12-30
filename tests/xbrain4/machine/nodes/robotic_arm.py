@@ -1,7 +1,9 @@
 import os
 import logging
 from abc import ABC, abstractmethod
-from state import MachineState
+
+from machine.core.node import AbstractNode
+from machine.state import MachineState
 
 # Attempt to import gpiozero, but don't fail if it's not available.
 try:
@@ -17,23 +19,31 @@ def clamp(v, lo, hi):
     """Clamps a value to a specified range."""
     return max(lo, min(hi, v))
 
-class AbstractArmController(ABC):
+class AbstractRoboticArmController(AbstractNode):
     """Abstract base class for all arm controllers."""
     def __init__(self, state: MachineState):
-        self.state = state
+        super().__init__(state)
+        self.log = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
     def set_pose(self, joint1: float, joint2: float, clamp_val: int):
         """Moves the arm to a specific configuration."""
         pass
 
-    @abstractmethod
+    def start(self):
+        self.log.info("Robotic Arm Controller started.")
+
+    def update(self):
+        # Arm commands are received asynchronously, so the update loop for the arm
+        # primarily focuses on maintaining its current state or responding to new commands.
+        pass
+    
     def stop(self):
         """Stops all arm activity."""
-        pass
+        self.log.info("Robotic Arm Controller stopped.")
 
 
-class SimulatedArmController(AbstractArmController):
+class SimulatedRoboticArmController(AbstractRoboticArmController):
     """
     An arm controller for simulated environments.
     It logs the commanded joint angles and clamp state.
@@ -49,20 +59,20 @@ class SimulatedArmController(AbstractArmController):
         self.state.arm_state['joint2'] = j2_angle
         self.state.arm_state['clamp'] = clamp_val
 
-        logging.info(f"🦾 [ARM] SIMULATED: J1={j1_angle}° J2={j2_angle}° CLAMP={cl_state}")
+        self.log.info(f"🦾 SIMULATED: J1={j1_angle}° J2={j2_angle}° CLAMP={cl_state}")
 
     def stop(self):
-        logging.info("🛑 [ARM] SIMULATED: STOP")
+        self.log.info("🛑 SIMULATED: STOP")
 
 
-class GPIOArmController(AbstractArmController):
+class GPIORoboticArmController(AbstractRoboticArmController):
     """
     An arm controller that interfaces with real servo motors via GPIO pins.
     """
     def __init__(self, state: MachineState):
         super().__init__(state)
         if not Servo or not hasattr(Servo, 'value'): # Check if Servo is the real class
-            raise ImportError("Cannot initialize GPIOArmController: gpiozero library is required.")
+            raise ImportError("Cannot initialize GPIORoboticArmController: gpiozero library is required.")
 
         try:
             # Using pigpio factory for better servo performance
@@ -78,10 +88,10 @@ class GPIOArmController(AbstractArmController):
             self.joint2_servo = Servo(joint2_pin, pin_factory=factory)
             self.clamp_servo = Servo(clamp_pin, pin_factory=factory)
 
-            logging.info("✅ [ARM] GPIO arm controller initialized.")
+            self.log.info("✅ GPIO arm controller initialized.")
 
         except (ValueError, TypeError, NameError) as e:
-            logging.error(f"❌ [ARM] ERROR: Invalid GPIO pin configuration for arm servos. {e}")
+            self.log.error(f"❌ ERROR: Invalid GPIO pin configuration for arm servos. {e}")
             raise ValueError("Could not initialize GPIO arm servos due to missing or invalid pin configuration.") from e
 
     def set_pose(self, joint1: float, joint2: float, clamp_val: int):
@@ -107,4 +117,4 @@ class GPIOArmController(AbstractArmController):
         self.joint1_servo.detach()
         self.joint2_servo.detach()
         self.clamp_servo.detach()
-        logging.info("🛑 [ARM] GPIO: Servos detached")
+        self.log.info("🛑 GPIO: Servos detached")

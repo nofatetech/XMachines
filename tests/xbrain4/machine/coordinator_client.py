@@ -1,5 +1,6 @@
 import requests
 import os
+from machine.lifecycle import Lifecycle
 
 def send_heartbeat(machine_id, lifecycle):
     coordinator_url = os.getenv("COORDINATOR_URL", "http://127.0.0.1:8000")

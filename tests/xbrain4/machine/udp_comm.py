@@ -2,13 +2,18 @@ import time
 import json
 import socket
 import logging
-from state import MachineState
-from motor import AbstractMotorController
-from arm import AbstractArmController
+import os
+import threading
 
-class UDPServer:
-    def __init__(self, state: MachineState, motor_controller: AbstractMotorController, arm_controller: AbstractArmController):
-        self.state = state
+from machine.core.node import AbstractNode
+from machine.state import MachineState
+from machine.nodes.tank_motor import AbstractTankMotorController
+from machine.nodes.robotic_arm import AbstractRoboticArmController
+
+class UDPServer(AbstractNode):
+    def __init__(self, state: MachineState, motor_controller: AbstractTankMotorController, arm_controller: AbstractRoboticArmController):
+        super().__init__(state)
+        self.log = logging.getLogger(self.__class__.__name__)
         self.motor = motor_controller
         self.arm = arm_controller
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -18,6 +23,45 @@ class UDPServer:
         self.sock.setblocking(False)
         self.last_command_ts = 0.0
         self.watchdog_timeout = 1.0 # seconds
+        self._running = False
+        self._thread = None
+
+    def _udp_loop(self):
+        while self._running and self.state.lifecycle != self.state.lifecycle.SHUTDOWN:
+            self._poll_and_watchdog()
+            time.sleep(0.01) # Small sleep to prevent busy-waiting
+
+    def start(self):
+        if not self._running:
+            self.log.info("UDP Server starting.")
+            self._running = True
+            self._thread = threading.Thread(target=self._udp_loop, daemon=True)
+            self._thread.start()
+        else:
+            self.log.warning("UDP Server is already running.")
+
+    def update(self):
+        # The main update loop for a node.
+        # For UDP server, its primary function (polling) runs in its own thread.
+        # This method could be used for other periodic checks if needed, but for now,
+        # the _udp_loop handles the continuous operation.
+        pass
+
+    def stop(self):
+        if self._running:
+            self.log.info("UDP Server stopping.")
+            self._running = False
+            if self._thread and self._thread.is_alive():
+                self._thread.join(timeout=1.0) # Wait for thread to finish
+            self.sock.close()
+            self.log.info("UDP Server stopped.")
+        else:
+            self.log.warning("UDP Server is not running.")
+    
+    def _poll_and_watchdog(self):
+        # Call the existing poll and watchdog logic
+        self.poll()
+        self.watchdog()
 
     def poll(self):
         """Poll for incoming UDP messages."""
