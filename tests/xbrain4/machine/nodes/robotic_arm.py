@@ -48,6 +48,10 @@ class SimulatedRoboticArmController(AbstractRoboticArmController):
     An arm controller for simulated environments.
     It logs the commanded joint angles and clamp state.
     """
+    def __init__(self, state: MachineState, arm_type: str = "unknown"):
+        super().__init__(state)
+        self.arm_type = arm_type
+
     def set_pose(self, joint1: float, joint2: float, clamp_val: int):
         # Clamp values to a realistic servo range (-90 to 90 degrees)
         j1_angle = clamp(joint1, -90, 90)
@@ -59,10 +63,10 @@ class SimulatedRoboticArmController(AbstractRoboticArmController):
         self.state.arm_state['joint2'] = j2_angle
         self.state.arm_state['clamp'] = clamp_val
 
-        self.log.info(f"🦾 SIMULATED: J1={j1_angle}° J2={j2_angle}° CLAMP={cl_state}")
+        self.log.info(f"🦾 SIMULATED ({self.arm_type}): J1={j1_angle}° J2={j2_angle}° CLAMP={cl_state}")
 
     def stop(self):
-        self.log.info("🛑 SIMULATED: STOP")
+        self.log.info(f"🛑 SIMULATED ({self.arm_type}): STOP")
 
 
 class GPIORoboticArmController(AbstractRoboticArmController):

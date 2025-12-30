@@ -24,39 +24,47 @@ from machine.services.heartbeat_service import HeartbeatService
 
 def create_motor_controller(state: MachineState) -> AbstractTankMotorController:
     """Factory function to create the appropriate motor controller based on configuration."""
-    # Default to 'simulation' for safety and ease of use.
-    controller_type = os.getenv("MOTOR_CONTROLLER", "simulation").lower()
+    execution_mode = os.getenv("EXECUTION_MODE", "simulation").lower()
+    motor_type = os.getenv("MOTOR_TYPE", "none").lower()
+
+    if execution_mode == "simulation":
+        logging.info(f"🕹️  [MACHINE1] Using SimulatedTankMotorController (mimicking '{motor_type}')")
+        return SimulatedTankMotorController(state, motor_type=motor_type)
     
-    if controller_type == "simulation":
-        logging.info("🕹️  [MACHINE1] Using SimulatedTankMotorController.")
-        return SimulatedTankMotorController(state)
-    elif controller_type == "dc":
-        logging.info("🤖 [MACHINE1] Using DC Motor Controller (via GPIO).")
-        return DCTankMotorController(state)
-    elif controller_type == "stepper":
-        logging.info("⚙️ [MACHINE1] Using StepperTankMotorController.")
-        return StepperTankMotorController(state)
-    elif controller_type == "none":
-        logging.info("💨 [MACHINE1] Using NullMotorController.")
-        return NullMotorController(state)
+    elif execution_mode == "real":
+        logging.info(f"🤖 [MACHINE1] Using REAL hardware controller for motor type: '{motor_type}'")
+        if motor_type == "dc":
+            return DCTankMotorController(state)
+        elif motor_type == "stepper":
+            return StepperTankMotorController(state)
+        elif motor_type == "none":
+            return NullMotorController(state)
+        else:
+            raise ValueError(f"Invalid MOTOR_TYPE for real execution: {motor_type}")
+    
     else:
-        raise ValueError(f"Invalid MOTOR_CONTROLLER type: {controller_type}")
+        raise ValueError(f"Invalid EXECUTION_MODE: {execution_mode}")
 
 def create_arm_controller(state: MachineState) -> AbstractRoboticArmController:
     """Factory function to create the appropriate arm controller."""
-    controller_type = os.getenv("ARM_CONTROLLER", "none").lower()
+    execution_mode = os.getenv("EXECUTION_MODE", "simulation").lower()
+    arm_type = os.getenv("ARM_TYPE", "none").lower()
 
-    if controller_type == "simulation":
-        logging.info("🦾 [MACHINE1] Using SimulatedRoboticArmController.")
-        return SimulatedRoboticArmController(state)
-    elif controller_type == "gpio":
-        logging.info("🦾 [MACHINE1] Using GPIORoboticArmController.")
-        return GPIORoboticArmController(state)
-    elif controller_type == "none":
-        logging.info("🦾 [MACHINE1] Using NullRoboticArmController.")
-        return NullRoboticArmController(state)
+    if execution_mode == "simulation":
+        logging.info(f"🦾 [MACHINE1] Using SimulatedRoboticArmController (mimicking '{arm_type}')")
+        return SimulatedRoboticArmController(state, arm_type=arm_type)
+
+    elif execution_mode == "real":
+        logging.info(f"🦾 [MACHINE1] Using REAL hardware controller for arm type: '{arm_type}'")
+        if arm_type == "gpio":
+            return GPIORoboticArmController(state)
+        elif arm_type == "none":
+            return NullRoboticArmController(state)
+        else:
+            raise ValueError(f"Invalid ARM_TYPE for real execution: {arm_type}")
+    
     else:
-        raise ValueError(f"Invalid ARM_CONTROLLER type: {controller_type}")
+        raise ValueError(f"Invalid EXECUTION_MODE: {execution_mode}")
 
 
 

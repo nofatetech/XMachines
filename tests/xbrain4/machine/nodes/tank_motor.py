@@ -50,17 +50,21 @@ class SimulatedTankMotorController(AbstractTankMotorController):
     A motor controller for simulated environments.
     It calculates motor speeds and logs them.
     """
+    def __init__(self, state: MachineState, motor_type: str = "unknown"):
+        super().__init__(state)
+        self.motor_type = motor_type
+
     def drive(self, linear: float, angular: float):
         if self.state.lifecycle != Lifecycle.ACTIVE:
             return
 
         left = clamp(linear - angular)
         right = clamp(linear + angular)
-        if left != 0 and right != 0.0:
-            self.log.info(f"🕹️  SIMULATED: LEFT={left:.2f} RIGHT={right:.2f}")
+        if left != 0 or right != 0.0:
+            self.log.info(f"🕹️  SIMULATED ({self.motor_type}): LEFT={left:.2f} RIGHT={right:.2f}")
 
     def stop(self):
-        self.log.info("🛑 SIMULATED: STOP")
+        self.log.info(f"🛑 SIMULATED ({self.motor_type}): STOP")
 
 
 class DCTankMotorController(AbstractTankMotorController):
