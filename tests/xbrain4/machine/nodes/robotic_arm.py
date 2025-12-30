@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 
 from machine.core.node import AbstractNode
-from machine.state import MachineState
+from machine.core.state import MachineState
 
 # Attempt to import gpiozero, but don't fail if it's not available.
 try:

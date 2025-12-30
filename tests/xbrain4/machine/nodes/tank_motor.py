@@ -3,8 +3,8 @@ import logging
 from abc import ABC, abstractmethod
 
 from machine.core.node import AbstractNode
-from machine.state import MachineState
-from machine.lifecycle import Lifecycle
+from machine.core.state import MachineState
+from machine.core.lifecycle import Lifecycle
 
 # Attempt to import gpiozero, but don't fail if it's not available.
 # This allows the simulation to run on systems without GPIO hardware or libraries.

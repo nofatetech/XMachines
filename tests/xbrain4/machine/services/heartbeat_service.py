@@ -4,9 +4,9 @@ import logging
 from dotenv import load_dotenv
 
 from machine.core.service import AbstractService
-from machine.state import MachineState
-from machine.lifecycle import Lifecycle
-from machine.coordinator_client import send_heartbeat
+from machine.core.state import MachineState
+from machine.core.lifecycle import Lifecycle
+from machine.utils.coordinator_client import send_heartbeat
 
 # Load environment variables (ensure this is done at the application entry point, but keep here for standalone testing)
 load_dotenv()

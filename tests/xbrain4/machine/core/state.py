@@ -1,5 +1,5 @@
 import time
-from machine.lifecycle import Lifecycle
+from .lifecycle import Lifecycle
 
 class MachineState:
     def __init__(self, machine_id: str):

@@ -5,8 +5,8 @@ from fastapi import FastAPI, Request
 import uvicorn
 
 from machine.core.service import AbstractService
-from machine.state import MachineState
-from machine.lifecycle import Lifecycle
+from machine.core.state import MachineState
+from machine.core.lifecycle import Lifecycle
 
 # Load environment variables (ensure this is done at the application entry point, but keep here for standalone testing)
 load_dotenv()

@@ -6,14 +6,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Setup logging before importing other modules that might log
-from machine.logging_config import setup_logging
+from machine.utils.logging_config import setup_logging
 setup_logging()
 
 import logging
 import threading
 
-from machine.state import MachineState
-from machine.lifecycle import Lifecycle
+from machine.core.state import MachineState
+from machine.core.lifecycle import Lifecycle
 from machine.nodes.tank_motor import SimulatedTankMotorController, DCTankMotorController, StepperTankMotorController, NullMotorController, AbstractTankMotorController
 from machine.nodes.robotic_arm import SimulatedRoboticArmController, GPIORoboticArmController, AbstractRoboticArmController, NullRoboticArmController
 

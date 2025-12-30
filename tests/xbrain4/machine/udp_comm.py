@@ -6,7 +6,7 @@ import os
 import threading
 
 from machine.core.node import AbstractNode
-from machine.state import MachineState
+from machine.core.state import MachineState
 from machine.nodes.tank_motor import AbstractTankMotorController
 from machine.nodes.robotic_arm import AbstractRoboticArmController
 
